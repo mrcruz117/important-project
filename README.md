@@ -1,6 +1,6 @@
-# Intern DevOps Starter
+# Project Aegis: Critical Submission Platform
 
-A small monorepo for practicing Git, pull requests, reviews, and frontend/backend integration.
+A mission-critical monorepo for safeguarding vital submissions. Failure is not an option; neither is pushing directly to `main`.
 
 ## Goal
 
@@ -30,7 +30,7 @@ The API runs on `http://localhost:8000`. The frontend runs on `http://localhost:
 
 ## Work split
 
-- Backend: FastAPI app, SQLite persistence, API tests, CORS for the frontend.
+- Backend: FastAPI app, SQLite persistence, API tests.
 - Frontend: form validation, API client, success/error states, record list.
 - Both: agree changes to this contract in a PR before relying on them.
 
