@@ -1,6 +1,6 @@
 # Project Aegis: Critical Submission Platform
 
-A mission-critical monorepo for safeguarding vital submissions. Failure is not an option; neither is pushing directly to `main`.
+A mission-critical monorepo for safeguarding vital submissions. Failure is not an option.
 
 ## Goal
 
@@ -43,6 +43,7 @@ The API runs on `http://localhost:8000`. The frontend runs on `http://localhost:
 5. Merge only after approval.
 
 Do not commit directly to `main`.
+- can't anyway. blocked it.
 
 ## Later exercises
 
