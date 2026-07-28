@@ -1,122 +1,112 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useState, type FormEvent } from 'react';
+import RecordForm from './components/RecordForm';
+import RecordsList from './components/RecordsList';
+import { fetchRecords, getErrorMessage, submitRecord } from './services/recordsApi';
+import type { RecordSubmission, SavedRecord } from './types/record';
+import { validateRecord } from './utils/validateRecord';
+import './App.css';
+
+const emptyForm: RecordSubmission = {
+  name: '',
+  email: '',
+  message: '',
+};
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [values, setValues] = useState<RecordSubmission>(emptyForm);
+  const [errors, setErrors] = useState<Partial<Record<keyof RecordSubmission, string>>>({});
+  const [records, setRecords] = useState<SavedRecord[]>([]);
+  const [isLoadingRecords, setIsLoadingRecords] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recordsError, setRecordsError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    void loadRecords();
+  }, []);
+
+  async function loadRecords() {
+    setIsLoadingRecords(true);
+    setRecordsError(null);
+
+    try {
+      const nextRecords = await fetchRecords();
+      setRecords(nextRecords);
+    } catch (error) {
+      setRecordsError(getErrorMessage(error));
+    } finally {
+      setIsLoadingRecords(false);
+    }
+  }
+
+  const handleChange = (field: keyof RecordSubmission, value: string) => {
+    setValues((currentValues) => ({ ...currentValues, [field]: value }));
+    setErrors((currentErrors) => ({ ...currentErrors, [field]: undefined }));
+
+    if (feedback) {
+      setFeedback(null);
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const nextErrors = validateRecord(values);
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFeedback(null);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFeedback(null);
+    setRecordsError(null);
+
+    try {
+      const createdRecord = await submitRecord(values);
+      setRecords((currentRecords) => [createdRecord, ...currentRecords]);
+      setValues(emptyForm);
+      setFeedback('Submission saved successfully.');
+    } catch (error) {
+      setFeedback(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <div className="app-shell">
+      <header className="hero">
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
+          <p className="eyebrow">Project Aegis</p>
+          <h1>ABSOLUTELY CRITICAL SUBMISSION PLATFORM!!!</h1>
+          <p className="hero-copy">
+            Capture submissions, validate them immediately, and review the latest records from the API.
           </p>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
+      {feedback ? (
+        <p className={`feedback ${feedback.includes('successfully') ? 'success' : 'error'}`}>
+          {feedback}
+        </p>
+      ) : null}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <main className="content-grid">
+        <RecordForm
+          values={values}
+          errors={errors}
+          isSubmitting={isSubmitting}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+        />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        <RecordsList records={records} isLoading={isLoadingRecords} error={recordsError} />
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
+// hmr test
