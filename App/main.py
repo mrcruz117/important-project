@@ -1,6 +1,22 @@
 from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlmodel import Field, Session, SQLModel, create_engine, select
+from fastapi.middleware.cors import CORSMiddleware
+
+# CORS middlware
+
+origins = [ "http://localhost:3000",  # React
+    "http://localhost:5173",  # Vite
+]
+
+apps.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+# gfds
 
 # create model
 class Record(SQLModel, table=True):
