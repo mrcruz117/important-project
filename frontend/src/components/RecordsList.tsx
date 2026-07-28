@@ -1,4 +1,4 @@
-import type { SavedRecord } from '../types/record';
+import type { SavedRecord } from "../types/record";
 
 type RecordsListProps = {
   records: SavedRecord[];
@@ -12,7 +12,15 @@ function RecordsList({ records, isLoading, error }: RecordsListProps) {
       <div className="card-header">
         <p className="eyebrow">Saved records</p>
         <h2>Recent submissions</h2>
-        <p className="muted">These are the records currently stored by the backend.</p>
+        <p className="muted">
+          These are the records currently stored by the backend.
+        </p>
+      </div>
+
+      <div className="record-list-header">
+        <span>Name</span>
+        <span>Email</span>
+        <span>Message</span>
       </div>
 
       {isLoading ? (
@@ -20,16 +28,16 @@ function RecordsList({ records, isLoading, error }: RecordsListProps) {
       ) : error ? (
         <p className="status error">{error}</p>
       ) : records.length === 0 ? (
-        <p className="status">No records yet. Submit the form to create the first one.</p>
+        <p className="status">
+          No records yet. Submit the form to create the first one.
+        </p>
       ) : (
         <ul className="record-list">
           {records.map((record) => (
             <li key={record.id} className="record-item">
-              <div>
-                <strong>{record.name}</strong>
-                <p>{record.email}</p>
-              </div>
-              <p className="message">{record.message}</p>
+              <span>{record.name}</span>
+              <span>{record.email}</span>
+              <span>{record.message}</span>
             </li>
           ))}
         </ul>
