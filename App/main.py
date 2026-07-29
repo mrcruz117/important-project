@@ -9,7 +9,9 @@ origins = [ "http://localhost:3000",  # React
     "http://localhost:5173",  # Vite
 ]
 
-apps.add_middleware(
+app = FastAPI()
+
+app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
@@ -42,7 +44,6 @@ def get_session():
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
-app = FastAPI()
 
 # create db table on startup
 @app.on_event("startup")
