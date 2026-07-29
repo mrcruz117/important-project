@@ -22,8 +22,9 @@ app.add_middleware(
 
 # create model
 class Record(SQLModel, table=True):
-    name: str = Field(primary_key=True, index=True)
-    email: str = Field(index=True) 
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field( index=True)
+    email: str = Field(index=True)
     message: str
 
 # creating an engine
