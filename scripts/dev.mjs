@@ -11,9 +11,15 @@ const BACKEND_MODULE = "App.main:app";
 
 const isWindows = process.platform === "win32";
 
+const VENV_DIR = existsSync(path.join(ROOT, "venv"))
+  ? "venv"
+  : existsSync(path.join(ROOT, ".venv"))
+  ? ".venv"
+  : null;
+
 const UVICORN = isWindows
-  ? path.join(ROOT, "venv", "Scripts", "uvicorn.exe")
-  : path.join(ROOT, "venv", "bin", "uvicorn");
+  ? path.join(ROOT, VENV_DIR, "Scripts", "uvicorn.exe")
+  : path.join(ROOT, VENV_DIR, "bin", "uvicorn");
 
 let backend = null;
 let frontend = null;
