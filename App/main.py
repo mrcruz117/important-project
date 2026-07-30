@@ -18,7 +18,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
-# gfds
+
 
 # create model
 class Record(SQLModel, table=True):
