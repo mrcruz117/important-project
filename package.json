@@ -1,7 +1,12 @@
 {
   "name": "important-project",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "setup": "npm install --prefix frontend && python -m venv App\\.venv && .\\App\\.venv\\Scripts\\python.exe -m pip install -r App\\requirements.txt"
+    "setup": "npm install && npm install --prefix frontend && python -m venv venv && .\\venv\\Scripts\\python.exe -m pip install -r App\\requirements.txt",
+    "dev": "node scripts/dev.mjs"
+  },
+  "devDependencies": {
+    "execa": "^9.6.0"
   }
 }
