@@ -1,0 +1,196 @@
+from pathlib import Path
+from typing import Annotated, Optional
+from fastapi import Depends, FastAPI, HTTPException, Query
+from sqlmodel import Field, Session, SQLModel, create_engine, select
+from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
+
+
+# CORS middlware
+
+origins = [ "http://localhost:3000",  # React
+    "http://localhost:5173",  # Vite
+]
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+
+# create model
+class Record(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field( index=True)
+    email: str = Field(index=True)
+    message: str
+    deleted_at: Optional[datetime] = Field(default=None, nullable=True)
+
+# creating an engine
+DB_DIR = Path(__file__).resolve().parents[1] / "database"
+DB_DIR.mkdir(exist_ok=True)
+sqlite_file_name = DB_DIR / "database.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+
+connect_args = {"check_same_thread": False}
+engine = create_engine(sqlite_url, connect_args=connect_args)
+
+# create the table
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+# create session dependency
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+SessionDep = Annotated[Session, Depends(get_session)]
+
+
+# create db table on startup
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
+
+# create a record
+@app.post("/records")
+def create_record(record: Record, session: SessionDep) -> Record:
+
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record
+
+# restore record endpoint
+@app.post("/records/{record_id}/restore")
+def restore_record(record_id: int, session: SessionDep):
+    record = session.get(Record, record_id)
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Record not found")
+
+    if record.deleted_at is None:
+        raise HTTPException(status_code=400, detail="Record is not deleted")
+
+    record.deleted_at = None
+
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+
+    return record
+
+# read records
+@app.get("/records")
+def read_records(session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100) -> list[Record]:
+    records = session.exec(select(Record).where(Record.deleted_at.is_(None)).offset(offset).limit(limit)).all()
+    return records
+
+# view deleted records
+@app.get("/records/deleted")
+def read_deleted_records(session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100) -> list[Record]:
+    records = session.exec(select(Record).where(Record.deleted_at.is_not(None)).offset(offset).limit(limit)).all()
+    return records
+
+
+# delete records (soft delete)
+@app.delete("/records/{record_id}")
+def delete_record(record_id: int, session: SessionDep):
+    record = session.get(Record, record_id)
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Record not found")
+
+    if record.deleted_at:
+        raise HTTPException(status_code=400, detail="Record already deleted")
+
+    record.deleted_at = datetime.utcnow()
+
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+
+    return record
+
+
+def seed_gen() -> list:
+    return [
+        Record(
+            name="Alice Johnson",
+            email="alice.johnson@example.com",
+            message="Hello from Alice!",
+        ),
+        Record(
+            name="Bob Smith",
+            email="bob.smith@example.com",
+            message="Testing the list UI.",
+        ),
+        Record(
+            name="Charlie Brown",
+            email="charlie.brown@example.com",
+            message="Seed record for development.",
+        ),
+        Record(
+            name="Charlie White",
+            email="charlie.white@example.com",
+            message="Seed record for development.",
+        ),
+        Record(
+            name="Charlie Gray",
+            email="charlie.gray@example.com",
+            message="Seed record for development.",
+        ),
+    ]
+
+
+#
+@app.post("/seed")
+def seed_db(session: SessionDep):
+    try:
+        create_record = seed_gen()
+
+        inserted = 0
+        duplicates = 0
+        errors = []
+
+        for r in create_record:
+            try:
+                existing = session.exec(
+                    select(Record).where(Record.email == r.email)
+                ).first()
+
+                if existing:
+                    duplicates += 1
+                    continue
+
+                session.add(r)
+                inserted += 1
+
+            except Exception as e:
+                # capture per-record errors without crashing whole seed
+                errors.append({
+                    "email": r.email,
+                    "error": str(e)
+                })
+
+        session.commit()
+
+        return {
+            "message": "Seed completed",
+            "inserted": inserted,
+            "duplicates_skipped": duplicates,
+            "total_attempted": len(create_record),
+            "errors": errors if errors else None
+        }
+
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Seed failed: {str(e)}"
+        )
