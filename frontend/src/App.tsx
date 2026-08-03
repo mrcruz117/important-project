@@ -78,7 +78,7 @@ function App() {
   const handleDelete = async (id: number) => {
     try {
       const response = await fetch(
-        'http://localhost:8000/records/${id}', {
+        `http://localhost:8000/records/${id}`, {
           method: "DELETE"
         }
       );
