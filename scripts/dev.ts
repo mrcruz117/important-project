@@ -5,13 +5,21 @@ import process from "node:process";
 
 const root = process.cwd();
 const isWindows = process.platform === "win32";
-const python = path.join(root, "venv", isWindows ? "Scripts/python.exe" : "bin/python");
+const pythonCandidates = [
+  path.join(root, ".venv", isWindows ? "Scripts/python.exe" : "bin/python"),
+  path.join(root, "venv", isWindows ? "Scripts/python.exe" : "bin/python")
+];
+
+const python = pythonCandidates.find(existsSync);
+
+if (!python) {
+  throw new Error("No Python virtual environment found. Expected .venv or venv");
+}
+
 const vite = path.join(root, "frontend", "node_modules", "vite", "bin", "vite.js");
 
-for (const file of [python, vite]) {
-  if (!existsSync(file)) {
-    throw new Error(`Missing ${file}. Run npm run setup first.`);
-  }
+if (!existsSync(vite)) {
+  throw new Error(`Missing ${vite}. Run npm run setup first.`);
 }
 
 const services = [
