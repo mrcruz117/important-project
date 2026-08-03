@@ -3,6 +3,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from fastapi.middleware.cors import CORSMiddleware
 
+
 # CORS middlware
 
 origins = [ "http://localhost:3000",  # React
@@ -67,17 +68,6 @@ def read_records(session: SessionDep, offset: int = 0, limit: Annotated[int, Que
     return records
 
 
-# create a record
-@app.post("/records")
-def create_record(record: Record, session: SessionDep) -> Record:
-    
-    session.add(record)
-    session.commit()
-    session.refresh(record)
-    return record
-
-
-
 def seed_gen() -> list:
     return [
         Record(
@@ -95,22 +85,30 @@ def seed_gen() -> list:
             email="charlie.brown@example.com",
             message="Seed record for development.",
         ),
+        Record(
+            name="Charlie White",
+            email="charlie.white@example.com",
+            message="Seed record for development.",
+        ),
+        Record(
+            name="Charlie Gray",
+            email="charlie.gray@example.com",
+            message="Seed record for development.",
+        ),
     ]
 
 
-from fastapi import HTTPException
-from sqlmodel import select
-
+#
 @app.post("/seed")
 def seed_db(session: SessionDep):
     try:
-        raw_records = seed_gen()
+        create_record = seed_gen()
 
         inserted = 0
         duplicates = 0
         errors = []
 
-        for r in raw_records:
+        for r in create_record:
             try:
                 existing = session.exec(
                     select(Record).where(Record.email == r.email)
@@ -120,11 +118,7 @@ def seed_db(session: SessionDep):
                     duplicates += 1
                     continue
 
-                session.add(Record(
-                    name=r.name,
-                    email=r.email,
-                    message=r.message
-                ))
+                session.add(r)
                 inserted += 1
 
             except Exception as e:
@@ -140,7 +134,7 @@ def seed_db(session: SessionDep):
             "message": "Seed completed",
             "inserted": inserted,
             "duplicates_skipped": duplicates,
-            "total_attempted": len(raw_records),
+            "total_attempted": len(create_record),
             "errors": errors if errors else None
         }
 
