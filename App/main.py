@@ -29,7 +29,8 @@ class Record(SQLModel, table=True):
     message: str
 
 # creating an engine
-sqlite_file_name = "database.db"
+DB_DIR = "database"
+sqlite_file_name = f"{DB_DIR}/database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 connect_args = {"check_same_thread": False}
