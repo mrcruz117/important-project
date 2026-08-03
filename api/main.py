@@ -64,37 +64,11 @@ def create_record(record: Record, session: SessionDep) -> Record:
     session.refresh(record)
     return record
 
-# restore record endpoint
-@app.post("/records/{record_id}/restore")
-def restore_record(record_id: int, session: SessionDep):
-    record = session.get(Record, record_id)
-
-    if not record:
-        raise HTTPException(status_code=404, detail="Record not found")
-
-    if record.deleted_at is None:
-        raise HTTPException(status_code=400, detail="Record is not deleted")
-
-    record.deleted_at = None
-
-    session.add(record)
-    session.commit()
-    session.refresh(record)
-
-    return {"message" : "record restored successfully"}
-
 # read records
 @app.get("/records")
 def read_records(session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100) -> list[Record]:
     records = session.exec(select(Record).where(Record.deleted_at.is_(None)).offset(offset).limit(limit)).all()
     return records
-
-# view deleted records
-@app.get("/records/deleted")
-def read_deleted_records(session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100) -> list[Record]:
-    records = session.exec(select(Record).where(Record.deleted_at.is_not(None)).offset(offset).limit(limit)).all()
-    return records
-
 
 # delete records (soft delete)
 @app.delete("/records/{record_id}")

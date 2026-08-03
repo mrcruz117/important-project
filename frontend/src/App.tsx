@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import RecordForm from './components/RecordForm';
 import RecordsList from './components/RecordsList';
-import { fetchRecords, getErrorMessage, seedDatabase, submitRecord } from './services/recordsApi';
+import { deleteRecord, fetchDeletedRecords, fetchRecords, getErrorMessage, restoreRecord, seedDatabase, submitRecord } from './services/recordsApi';
 import type { RecordSubmission, SavedRecord } from './types/record';
 import { validateRecord } from './utils/validateRecord';
 import './App.css';
@@ -16,11 +16,13 @@ function App() {
   const [values, setValues] = useState<RecordSubmission>(emptyForm);
   const [errors, setErrors] = useState<Partial<Record<keyof RecordSubmission, string>>>({});
   const [records, setRecords] = useState<SavedRecord[]>([]);
+  const [deletedRecords, setDeletedRecords] = useState<SavedRecord[]>([]);
   const [isLoadingRecords, setIsLoadingRecords] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
   const [recordsError, setRecordsError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [showDeletedRecords, setShowDeletedRecords] = useState(false);
 
   useEffect(() => {
     void loadRecords();
@@ -31,8 +33,9 @@ function App() {
     setRecordsError(null);
 
     try {
-      const nextRecords = await fetchRecords();
+      const [nextRecords, nextDeletedRecords] = await Promise.all([fetchRecords(), fetchDeletedRecords()]);
       setRecords(nextRecords);
+      setDeletedRecords(nextDeletedRecords);
     } catch (error) {
       setRecordsError(getErrorMessage(error));
     } finally {
@@ -77,26 +80,45 @@ function App() {
   };
 
   const handleDelete = async (id: number) => {
+    setFeedback(null);
+    setRecordsError(null);
+
     try {
-      const response = await fetch(
-        `http://localhost:8000/records/${id}`, {
-          method: "DELETE"
-        }
-      );
-
-      if(!response.ok) {
-        throw new Error("Delete failed");
-      }
-
+      const deletedRecord = await deleteRecord(id);
       setRecords((prev) => prev.filter((record) => record.id !== id));
+      setDeletedRecords((prev) => {
+        if (prev.some((record) => record.id === deletedRecord.id)) {
+          return prev;
+        }
 
-      alert("Record deleted successfully");
-    } catch {
-      alert("Failed to delete record");
+        return [deletedRecord, ...prev];
+      });
+      setFeedback('Record deleted successfully.');
+    } catch (error) {
+      setFeedback(getErrorMessage(error));
     }
   };
 
-  
+  const handleRestore = async (id: number) => {
+    setFeedback(null);
+    setRecordsError(null);
+
+    try {
+      const restoredRecord = await restoreRecord(id);
+      setDeletedRecords((prev) => prev.filter((record) => record.id !== id));
+      setRecords((prev) => {
+        if (prev.some((record) => record.id === restoredRecord.id)) {
+          return prev;
+        }
+
+        return [restoredRecord, ...prev];
+      });
+      setFeedback('Record restored successfully.');
+      setShowDeletedRecords(false);
+    } catch (error) {
+      setFeedback(getErrorMessage(error));
+    }
+  };
 
   const handleSeedDatabase = async () => {
     setIsSeeding(true);
@@ -138,6 +160,14 @@ function App() {
       ) : null}
 
       <main className="content-grid">
+        <div className="list-toggle" role="group" aria-label="Record list view">
+          <button type="button" className={showDeletedRecords ? 'secondary-button' : 'primary-button'} onClick={() => setShowDeletedRecords(false)}>
+            Active records
+          </button>
+          <button type="button" className={showDeletedRecords ? 'primary-button' : 'secondary-button'} onClick={() => setShowDeletedRecords(true)}>
+            Deleted records
+          </button>
+        </div>
         <RecordForm
           values={values}
           errors={errors}
@@ -146,7 +176,16 @@ function App() {
           onSubmit={handleSubmit}
         />
 
-        <RecordsList records={records} isLoading={isLoadingRecords} error={recordsError} onDelete={handleDelete} />
+        <RecordsList
+          records={records}
+          deletedRecords={deletedRecords}
+          isLoading={isLoadingRecords}
+          error={recordsError}
+          onDelete={handleDelete}
+          onRestore={handleRestore}
+          onToggleView={() => setShowDeletedRecords((current) => !current)}
+          showDeletedRecords={showDeletedRecords}
+        />
       </main>
     </div>
   );
