@@ -1,7 +1,8 @@
-from typing import Annotated
+from typing import Annotated, Optional
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
 
 # CORS middlware
 
@@ -26,6 +27,7 @@ class Record(SQLModel, table=True):
     name: str = Field( index=True)
     email: str = Field(index=True)
     message: str
+    deleted_at: Optional[datetime] = Field(default=None, nullable=True)
 
 # creating an engine
 sqlite_file_name = "database.db"
@@ -62,7 +64,26 @@ def create_record(record: Record, session: SessionDep) -> Record:
 # read records
 @app.get("/records")
 def read_records(session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100) -> list[Record]:
-    records = session.exec(select(Record).offset(offset).limit(limit)).all()
+    records = session.exec(select(Record).where(Record.deleted_at.is_(None)).offset(offset).limit(limit)).all()
     return records
+
+# delete records (soft delete)
+@app.delete("/records/{record_id}")
+def delete_record(record_id: int, session: SessionDep):
+    record = session.get(Record, record_id)
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Record not found")
+
+    if record.deleted_at:
+        raise HTTPException(status_code=400, detail="Record already deleted")
+
+    record.deleted_at = datetime.utcnow()
+
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+
+    return {"message": "Record deleted successfully"}
 
 
