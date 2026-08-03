@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import RecordForm from './components/RecordForm';
 import RecordsList from './components/RecordsList';
-import { fetchRecords, getErrorMessage, submitRecord } from './services/recordsApi';
+import { fetchRecords, getErrorMessage, seedDatabase, submitRecord } from './services/recordsApi';
 import type { RecordSubmission, SavedRecord } from './types/record';
 import { validateRecord } from './utils/validateRecord';
 import './App.css';
@@ -18,6 +18,7 @@ function App() {
   const [records, setRecords] = useState<SavedRecord[]>([]);
   const [isLoadingRecords, setIsLoadingRecords] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [recordsError, setRecordsError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -97,6 +98,22 @@ function App() {
 
   
 
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    setFeedback(null);
+    setRecordsError(null);
+
+    try {
+      const result = await seedDatabase();
+      await loadRecords();
+      setFeedback(`Seed complete: ${result.inserted} inserted, ${result.duplicates_skipped} duplicates skipped.`);
+    } catch (error) {
+      setFeedback(getErrorMessage(error));
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   return (
     <div className="app-shell">
       <header className="hero">
@@ -106,6 +123,11 @@ function App() {
           <p className="hero-copy">
             Capture submissions, validate them immediately, and review the latest records from the API.
           </p>
+          <div className="hero-actions">
+            <button type="button" className="secondary-button" onClick={() => { void handleSeedDatabase(); }} disabled={isSeeding}>
+              {isSeeding ? 'Seeding…' : 'Seed sample records'}
+            </button>
+          </div>
         </div>
       </header>
 

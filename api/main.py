@@ -4,6 +4,7 @@ from sqlmodel import Field, Session, SQLModel, create_engine, select
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 
+
 # CORS middlware
 
 origins = [ "http://localhost:3000",  # React
@@ -19,7 +20,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
-# gfds
+
 
 # create model
 class Record(SQLModel, table=True):
@@ -30,7 +31,8 @@ class Record(SQLModel, table=True):
     deleted_at: Optional[datetime] = Field(default=None, nullable=True)
 
 # creating an engine
-sqlite_file_name = "database.db"
+DB_DIR = "database"
+sqlite_file_name = f"{DB_DIR}/database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 connect_args = {"check_same_thread": False}
@@ -56,6 +58,7 @@ def on_startup():
 # create a record
 @app.post("/records")
 def create_record(record: Record, session: SessionDep) -> Record:
+
     session.add(record)
     session.commit()
     session.refresh(record)
@@ -87,3 +90,79 @@ def delete_record(record_id: int, session: SessionDep):
     return {"message": "Record deleted successfully"}
 
 
+def seed_gen() -> list:
+    return [
+        Record(
+            name="Alice Johnson",
+            email="alice.johnson@example.com",
+            message="Hello from Alice!",
+        ),
+        Record(
+            name="Bob Smith",
+            email="bob.smith@example.com",
+            message="Testing the list UI.",
+        ),
+        Record(
+            name="Charlie Brown",
+            email="charlie.brown@example.com",
+            message="Seed record for development.",
+        ),
+        Record(
+            name="Charlie White",
+            email="charlie.white@example.com",
+            message="Seed record for development.",
+        ),
+        Record(
+            name="Charlie Gray",
+            email="charlie.gray@example.com",
+            message="Seed record for development.",
+        ),
+    ]
+
+
+#
+@app.post("/seed")
+def seed_db(session: SessionDep):
+    try:
+        create_record = seed_gen()
+
+        inserted = 0
+        duplicates = 0
+        errors = []
+
+        for r in create_record:
+            try:
+                existing = session.exec(
+                    select(Record).where(Record.email == r.email)
+                ).first()
+
+                if existing:
+                    duplicates += 1
+                    continue
+
+                session.add(r)
+                inserted += 1
+
+            except Exception as e:
+                # capture per-record errors without crashing whole seed
+                errors.append({
+                    "email": r.email,
+                    "error": str(e)
+                })
+
+        session.commit()
+
+        return {
+            "message": "Seed completed",
+            "inserted": inserted,
+            "duplicates_skipped": duplicates,
+            "total_attempted": len(create_record),
+            "errors": errors if errors else None
+        }
+
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Seed failed: {str(e)}"
+        )

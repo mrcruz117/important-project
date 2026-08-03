@@ -2,6 +2,14 @@ import type { RecordSubmission, SavedRecord } from '../types/record';
 
 const API_BASE_URL = 'http://localhost:8000';
 
+export interface SeedResponse {
+  message: string;
+  inserted: number;
+  duplicates_skipped: number;
+  total_attempted: number;
+  errors?: Array<{ email: string; error: string }> | null;
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
     return error.message;
@@ -56,6 +64,22 @@ export async function submitRecord(payload: RecordSubmission): Promise<SavedReco
   }
 
   return parseJson<SavedRecord>(response);
+}
+
+export async function seedDatabase(): Promise<SeedResponse> {
+  const response = await fetch(`${API_BASE_URL}/seed`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await parseJson<{detail?: string}>(response);
+    throw new Error(errorBody.detail ?? 'Unable to seed the database.');
+  }
+
+  return parseJson<SeedResponse>(response);
 }
 
 export { getErrorMessage };
