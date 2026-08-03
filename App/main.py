@@ -98,21 +98,55 @@ def seed_gen() -> list:
     ]
 
 
+from fastapi import HTTPException
+from sqlmodel import select
+
 @app.post("/seed")
 def seed_db(session: SessionDep):
-    records = seed_gen()
+    try:
+        raw_records = seed_gen()
 
-    for r in records:
-        existing = session.exec(
-            select(Record).where(Record.email == r.email)
-        ).first()
+        inserted = 0
+        duplicates = 0
+        errors = []
 
-        if existing:
-            continue
+        for r in raw_records:
+            try:
+                existing = session.exec(
+                    select(Record).where(Record.email == r.email)
+                ).first()
 
-        session.add(r)
+                if existing:
+                    duplicates += 1
+                    continue
 
-    session.commit()
+                session.add(Record(
+                    name=r.name,
+                    email=r.email,
+                    message=r.message
+                ))
+                inserted += 1
 
-    return {"message": "Seed complete (idempotent, safe, no duplicates)"}
+            except Exception as e:
+                # capture per-record errors without crashing whole seed
+                errors.append({
+                    "email": r.email,
+                    "error": str(e)
+                })
 
+        session.commit()
+
+        return {
+            "message": "Seed completed",
+            "inserted": inserted,
+            "duplicates_skipped": duplicates,
+            "total_attempted": len(raw_records),
+            "errors": errors if errors else None
+        }
+
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Seed failed: {str(e)}"
+        )
