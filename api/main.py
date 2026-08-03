@@ -117,7 +117,6 @@ def delete_record(record_id: int, session: SessionDep):
 
     return record
 
-
 def seed_gen() -> list:
     return [
         Record(
@@ -144,6 +143,113 @@ def seed_gen() -> list:
             name="Charlie Gray",
             email="charlie.gray@example.com",
             message="Seed record for development.",
+        ),
+
+        # --- Additional 20 test records ---
+        Record(
+            name="David Miller",
+            email="david.miller@example.com",
+            message="Additional seed record.",
+        ),
+        Record(
+            name="Emma Davis",
+            email="emma.davis@example.com",
+            message="Adding more test data.",
+        ),
+        Record(
+            name="Frank Wilson",
+            email="frank.wilson@example.com",
+            message="Seed data for QA.",
+        ),
+        Record(
+            name="Grace Lee",
+            email="grace.lee@example.com",
+            message="Testing bulk inserts.",
+        ),
+        Record(
+            name="Henry Taylor",
+            email="henry.taylor@example.com",
+            message="Sample record for UI testing.",
+        ),
+        Record(
+            name="Isabella Moore",
+            email="isabella.moore@example.com",
+            message="Development seed entry.",
+        ),
+        Record(
+            name="Jack Anderson",
+            email="jack.anderson@example.com",
+            message="Filling database with sample data.",
+        ),
+        Record(
+            name="Karen Thomas",
+            email="karen.thomas@example.com",
+            message="Testing pagination.",
+        ),
+        Record(
+            name="Liam Jackson",
+            email="liam.jackson@example.com",
+            message="Another seed record.",
+        ),
+        Record(
+            name="Mia Martin",
+            email="mia.martin@example.com",
+            message="Checking list rendering.",
+        ),
+        Record(
+            name="Noah Thompson",
+            email="noah.thompson@example.com",
+            message="Seed record for user flow tests.",
+        ),
+        Record(
+            name="Olivia Garcia",
+            email="olivia.garcia@example.com",
+            message="Development test entry.",
+        ),
+        Record(
+            name="Paul Martinez",
+            email="paul.martinez@example.com",
+            message="Adding more realistic data.",
+        ),
+        Record(
+            name="Quinn Robinson",
+            email="quinn.robinson@example.com",
+            message="Testing edge cases.",
+        ),
+        Record(
+            name="Riley Clark",
+            email="riley.clark@example.com",
+            message="Seed data for integration tests.",
+        ),
+        Record(
+            name="Sophia Rodriguez",
+            email="sophia.rodriguez@example.com",
+            message="Sample entry for UI checks.",
+        ),
+        Record(
+            name="Thomas Lewis",
+            email="thomas.lewis@example.com",
+            message="Testing data volume.",
+        ),
+        Record(
+            name="Uma Walker",
+            email="uma.walker@example.com",
+            message="More seed data.",
+        ),
+        Record(
+            name="Victor Hall",
+            email="victor.hall@example.com",
+            message="Testing consistency.",
+        ),
+        Record(
+            name="Wendy Allen",
+            email="wendy.allen@example.com",
+            message="Trying the cool test record.",
+        ),
+        Record(
+            name="HUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUGE NAMEEEEEEEEEEEEEEEEEEEE",
+            email="weHUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUGEndy.allen@example.com",
+            message="Final testTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT reCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCcord.",
         ),
     ]
 
