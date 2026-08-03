@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated, Optional
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlmodel import Field, Session, SQLModel, create_engine, select
@@ -31,8 +32,9 @@ class Record(SQLModel, table=True):
     deleted_at: Optional[datetime] = Field(default=None, nullable=True)
 
 # creating an engine
-DB_DIR = "database"
-sqlite_file_name = f"{DB_DIR}/database.db"
+DB_DIR = Path(__file__).resolve().parents[1] / "database"
+DB_DIR.mkdir(exist_ok=True)
+sqlite_file_name = DB_DIR / "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 connect_args = {"check_same_thread": False}
