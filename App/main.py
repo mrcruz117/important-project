@@ -54,6 +54,7 @@ def on_startup():
 # create a record
 @app.post("/records")
 def create_record(record: Record, session: SessionDep) -> Record:
+
     session.add(record)
     session.commit()
     session.refresh(record)
@@ -65,4 +66,53 @@ def read_records(session: SessionDep, offset: int = 0, limit: Annotated[int, Que
     records = session.exec(select(Record).offset(offset).limit(limit)).all()
     return records
 
+
+# create a record
+@app.post("/records")
+def create_record(record: Record, session: SessionDep) -> Record:
+    
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record
+
+
+
+def seed_gen() -> list:
+    return [
+        Record(
+            name="Alice Johnson",
+            email="alice.johnson@example.com",
+            message="Hello from Alice!",
+        ),
+        Record(
+            name="Bob Smith",
+            email="bob.smith@example.com",
+            message="Testing the list UI.",
+        ),
+        Record(
+            name="Charlie Brown",
+            email="charlie.brown@example.com",
+            message="Seed record for development.",
+        ),
+    ]
+
+
+@app.post("/seed")
+def seed_db(session: SessionDep):
+    records = seed_gen()
+
+    for r in records:
+        existing = session.exec(
+            select(Record).where(Record.email == r.email)
+        ).first()
+
+        if existing:
+            continue
+
+        session.add(r)
+
+    session.commit()
+
+    return {"message": "Seed complete (idempotent, safe, no duplicates)"}
 
