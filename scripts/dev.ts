@@ -15,7 +15,7 @@ for (const file of [python, vite]) {
 }
 
 const services = [
-  spawn(python, ["-m", "uvicorn", "App.main:app", "--port", "8000"], {
+  spawn(python, ["-m", "uvicorn", "api.main:app", "--port", "8000"], {
     cwd: root,
     stdio: "inherit",
   }),
