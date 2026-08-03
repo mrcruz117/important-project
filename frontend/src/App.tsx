@@ -75,6 +75,28 @@ function App() {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/records/${id}`, {
+          method: "DELETE"
+        }
+      );
+
+      if(!response.ok) {
+        throw new Error("Delete failed");
+      }
+
+      setRecords((prev) => prev.filter((record) => record.id !== id));
+
+      alert("Record deleted successfully");
+    } catch {
+      alert("Failed to delete record");
+    }
+  };
+
+  
+
   return (
     <div className="app-shell">
       <header className="hero">
@@ -102,7 +124,7 @@ function App() {
           onSubmit={handleSubmit}
         />
 
-        <RecordsList records={records} isLoading={isLoadingRecords} error={recordsError} />
+        <RecordsList records={records} isLoading={isLoadingRecords} error={recordsError} onDelete={handleDelete} />
       </main>
     </div>
   );

@@ -4,9 +4,10 @@ type RecordsListProps = {
   records: SavedRecord[];
   isLoading: boolean;
   error: string | null;
+  onDelete: (id: number) => void
 };
 
-function RecordsList({ records, isLoading, error }: RecordsListProps) {
+function RecordsList({ records, isLoading, error, onDelete }: RecordsListProps) {
   return (
     <section className="card list-card" aria-live="polite">
       <div className="card-header">
@@ -21,6 +22,7 @@ function RecordsList({ records, isLoading, error }: RecordsListProps) {
         <span>Name</span>
         <span>Email</span>
         <span>Message</span>
+        <span>Actions</span>
       </div>
 
       {isLoading ? (
@@ -38,6 +40,13 @@ function RecordsList({ records, isLoading, error }: RecordsListProps) {
               <span>{record.name}</span>
               <span>{record.email}</span>
               <span>{record.message}</span>
+
+              <button
+                className="delete-button"
+                onClick={() => onDelete(record.id)}
+              >
+                Delete
+                </button>              
             </li>
           ))}
         </ul>
