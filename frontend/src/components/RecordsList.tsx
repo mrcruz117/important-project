@@ -1,4 +1,5 @@
-import type { SavedRecord } from "../types/record";
+import { useEffect, useRef, useState } from 'react';
+import type { SavedRecord } from '../types/record';
 
 type RecordsListProps = {
   records: SavedRecord[];
@@ -9,9 +10,92 @@ type RecordsListProps = {
   onRestore: (id: number) => void;
   onToggleView: () => void;
   showDeletedRecords: boolean;
+  onOpenForm: () => void;
+  onSeed: () => void;
+  isSeeding: boolean;
 };
 
-function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRestore, onToggleView, showDeletedRecords }: RecordsListProps) {
+type TruncatedTextProps = {
+  children: string;
+  className?: string;
+};
+
+function TruncatedText({ children, className }: TruncatedTextProps) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const element = ref.current;
+
+    if (!element) {
+      return;
+    }
+
+    const update = () => {
+      setIsTruncated(element.scrollWidth > element.clientWidth);
+    };
+
+    update();
+
+    const resizeObserver = new ResizeObserver(update);
+    resizeObserver.observe(element);
+
+    window.addEventListener('resize', update);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [children]);
+
+  const showOnHover = (event: React.MouseEvent<HTMLSpanElement>) => {
+    if (!isTruncated) {
+      return;
+    }
+
+    setShowTooltip(true);
+    setTooltipPosition({ x: event.clientX, y: event.clientY });
+  };
+
+  const showOnFocus = () => {
+    if (!isTruncated) {
+      return;
+    }
+
+    const element = ref.current;
+    if (!element) {
+      return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    setTooltipPosition({ x: rect.left + rect.width / 2, y: rect.top - 8 });
+    setShowTooltip(true);
+  };
+
+  return (
+    <span
+      ref={ref}
+      className={className}
+      onMouseEnter={showOnHover}
+      onMouseMove={showOnHover}
+      onMouseLeave={() => setShowTooltip(false)}
+      onFocus={showOnFocus}
+      onBlur={() => setShowTooltip(false)}
+      tabIndex={0}
+    >
+      {children}
+      {showTooltip && isTruncated ? (
+        <span className="record-tooltip" style={{ left: tooltipPosition.x, top: tooltipPosition.y }}>
+          {children}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRestore, onToggleView, showDeletedRecords, onOpenForm, onSeed, isSeeding }: RecordsListProps) {
   const visibleRecords = showDeletedRecords ? deletedRecords : records;
   const emptyMessage = showDeletedRecords
     ? 'No deleted records right now.'
@@ -31,9 +115,17 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
 
       <div className="record-list-actions">
         <span className="record-list-summary">{showDeletedRecords ? `${deletedRecords.length} deleted` : `${records.length} active`}</span>
-        <button type="button" className="secondary-button" onClick={onToggleView} aria-pressed={showDeletedRecords}>
-          {showDeletedRecords ? 'Show active records' : 'Show deleted records'}
-        </button>
+        <div className="record-list-toolbar">
+          <button type="button" className="primary-button" onClick={onOpenForm}>
+            New submission
+          </button>
+          <button type="button" className="secondary-button" onClick={onSeed} disabled={isSeeding}>
+            {isSeeding ? 'Seeding…' : 'Seed sample records'}
+          </button>
+          <button type="button" className="secondary-button" onClick={onToggleView} aria-pressed={showDeletedRecords}>
+            {showDeletedRecords ? 'Show active records' : 'Show deleted records'}
+          </button>
+        </div>
       </div>
 
       <div className="record-list-header">
@@ -50,29 +142,35 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
       ) : visibleRecords.length === 0 ? (
         <p className="status">{emptyMessage}</p>
       ) : (
-        <ul className="record-list">
-          {visibleRecords.map((record) => (
-            <li key={record.id} className="record-item">
-              <div className="record-item-main">
-                <strong>{record.name}</strong>
-                <p>{record.email}</p>
-                <p>{record.message}</p>
-              </div>
+        <div className="record-list-scroll">
+          <ul className="record-list">
+            {visibleRecords.map((record) => (
+              <li key={record.id} className="record-item">
+                <div className="record-cell record-cell-name">
+                  <TruncatedText className="record-item-text record-item-title">{record.name}</TruncatedText>
+                </div>
+                <div className="record-cell record-cell-email">
+                  <TruncatedText className="record-item-text">{record.email}</TruncatedText>
+                </div>
+                <div className="record-cell record-cell-message">
+                  <TruncatedText className="record-item-text">{record.message}</TruncatedText>
+                </div>
 
-              <div className="record-item-actions">
-                {showDeletedRecords ? (
-                  <button type="button" className="restore-button" onClick={() => onRestore(record.id)}>
-                    Restore
-                  </button>
-                ) : (
-                  <button type="button" className="delete-button" onClick={() => onDelete(record.id)}>
-                    Delete
-                  </button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+                <div className="record-item-actions">
+                  {showDeletedRecords ? (
+                    <button type="button" className="restore-button" onClick={() => onRestore(record.id)}>
+                      Restore
+                    </button>
+                  ) : (
+                    <button type="button" className="delete-button" onClick={() => onDelete(record.id)}>
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );
