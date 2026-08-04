@@ -72,7 +72,10 @@ def get_current_user(x_user: str = Header(...)):
     role = USERS.get(x_user)
 
     if not role:
-        raise HTTPException(status_code=403, detail="Unkown user")
+        raise HTTPException(
+            status_code=403,
+            detail="Unknown user"
+        )
 
     return {
         "username": x_user,

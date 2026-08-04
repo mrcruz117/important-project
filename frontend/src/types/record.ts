@@ -1,5 +1,4 @@
 export interface RecordSubmission {
-  owner: string;
   name: string;
   email: string;
   message: string;
