@@ -68,7 +68,7 @@ def get_session():
 SessionDep = Annotated[Session, Depends(get_session)]
 
 # get active user
-def get_current_user(x_user: str = Header):
+def get_current_user(x_user: str = Header(...)):
     role = USERS.get(x_user)
 
     if not role:
@@ -104,11 +104,11 @@ def create_record(record: Record, session: SessionDep, user: UserDep) -> Record:
 def restore_record(record_id: int, session: SessionDep, user: UserDep):
     record = session.get(Record, record_id)
 
-    if not can_restore(user, record):
-        raise HTTPException(status_code=403,detail="You do not have permission to restore this record")
-
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
+
+    if not can_restore(user, record):
+        raise HTTPException(status_code=403,detail="You do not have permission to restore this record")
 
     if record.deleted_at is None:
         raise HTTPException(status_code=400, detail="Record is not deleted")
@@ -139,11 +139,11 @@ def read_deleted_records(session: SessionDep, offset: int = 0, limit: Annotated[
 def delete_record(record_id: int, session: SessionDep, user: UserDep):
     record = session.get(Record, record_id)
 
-    if not can_delete(user, record):
-        raise HTTPException(status_code=403,detail="You do not have permission to delete this record")
-
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
+
+    if not can_delete(user, record):
+        raise HTTPException(status_code=403,detail="You do not have permission to delete this record")
 
     if record.deleted_at:
         raise HTTPException(status_code=400, detail="Record already deleted")
@@ -161,11 +161,11 @@ def delete_record(record_id: int, session: SessionDep, user: UserDep):
 def update_record(record_id: int, updated_record: RecordUpdate, session: SessionDep, user: UserDep) -> Record:
     record = session.get(Record, record_id)
 
-    if not can_edit(user, record):
-        raise HTTPException(status_code=403, detail="You do not have permission to edit this record")
-
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
+
+    if not can_edit(user, record):
+        raise HTTPException(status_code=403, detail="You do not have permission to edit this record")
 
     if record.deleted_at is not None:
         raise HTTPException(status_code=400, detail="Cannot edit a deleted record")
