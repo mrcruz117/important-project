@@ -269,7 +269,7 @@ textarea {
 
 .record-list-header {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1.4fr auto;
+  grid-template-columns: 1.2fr 1fr 1.4fr 140px;
   gap: 0.75rem;
   font-weight: 600;
   color: #334155;
@@ -348,6 +348,22 @@ textarea {
 .record-item-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-width: 180px;
+}
+
+.edit-button {
+  background-color: #0babf5;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.edit-button:hover {
+  background-color: #4269e7;
 }
 
 .restore-button,
@@ -356,6 +372,7 @@ textarea {
   border-radius: 999px;
   padding: 0.6rem 0.9rem;
   font-weight: 600;
+  height: 40px;
   cursor: pointer;
 }
 

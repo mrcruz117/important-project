@@ -34,9 +34,6 @@ function App() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showDeletedRecords, setShowDeletedRecords] = useState(false);
   const [editingRecord, setEditingRecord] = useState<SavedRecord | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editMessage, setEditMessage] = useState("")
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
@@ -87,6 +84,12 @@ function App() {
     setRecordsError(null);
 
     try {
+
+      if (editingRecord) {
+        await handleSaveEdit();
+        return;
+      }
+
       const createdRecord = await submitRecord(values);
       setRecords((currentRecords) => [createdRecord, ...currentRecords]);
       setValues(emptyForm);
@@ -154,7 +157,8 @@ function App() {
   };
 
   const handleEdit = (record: SavedRecord) => {
-    console.log("Edit clicked", record);
+    setEditingRecord(record);
+
     setValues({
       name: record.name,
       email: record.email,
@@ -176,9 +180,10 @@ function App() {
           },
           body: JSON.stringify({
             ...editingRecord,
-            name: editName,
-            email: editEmail,
-            message: editMessage,
+            name: values.name,
+            email: values.email,
+            message: values.message,
+            owner: values.owner,
           }),
         }
       );
