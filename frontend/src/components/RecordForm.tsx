@@ -9,6 +9,7 @@ type RecordFormProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   className?: string;
   onClose?: () => void;
+
 };
 
 function RecordForm({ values, errors, isSubmitting, onChange, onSubmit, className, onClose }: RecordFormProps) {
@@ -39,6 +40,14 @@ function RecordForm({ values, errors, isSubmitting, onChange, onSubmit, classNam
           aria-describedby={errors.name ? 'name-error' : undefined}
         />
         {errors.name ? <small id="name-error">{errors.name}</small> : null}
+      </label>
+      
+      <label className='field'>
+        Owner
+        <input
+          value={values.owner}
+          onChange={(event) => onChange("owner", event.target.value)}
+        />
       </label>
 
       <label className="field">

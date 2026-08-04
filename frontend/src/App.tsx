@@ -15,11 +15,25 @@ type Toast = {
   variant: ToastVariant;
 };
 
+type UserRole = 'admin' | 'user' | 'read-only';
+
+type ActiveUser = {
+  username: string;
+  role: UserRole;
+}
+
+const USERS: ActiveUser[] = [
+  { username: "mcruz", role: "admin" },
+  { username: "acheebez", role: "user" },
+  { username: "gfrango", role: "user" },
+  { username: 'bingus', role: 'read-only' },
+];
+
 const emptyForm: RecordSubmission = {
   name: '',
   email: '',
   message: '',
-  owner:  '',
+  owner: '',
 };
 
 function App() {
@@ -33,7 +47,37 @@ function App() {
   const [recordsError, setRecordsError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showDeletedRecords, setShowDeletedRecords] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<SavedRecord | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [activeUser, setActiveUser] = useState<ActiveUser>(USERS[0]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('activeUser');
+    if (savedUser) {
+      setActiveUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('activeUser', JSON.stringify(activeUser));
+  }, [activeUser]);
+
+  const isAdmin = activeUser.role === 'admin';
+
+  const isReadOnly = activeUser.role === 'read-only';
+
+  const canCreateRecords = !isReadOnly;
+
+  const canSeedDatabase = isAdmin;
+
+  const canModifyRecord = (record: SavedRecord) => {
+    if (isAdmin) {
+      return true;
+    }
+
+    return record.owner === activeUser.username;
+  };
+
 
   useEffect(() => {
     void loadRecords();
@@ -68,6 +112,16 @@ function App() {
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+
+    if (!canCreateRecords) {
+      pushToast(
+        'Permission denied',
+        'Read-only users cannot create records.',
+        'error'
+      );
+      return;
+    }
+
     event.preventDefault();
 
     const nextErrors = validateRecord(values);
@@ -83,7 +137,16 @@ function App() {
     setRecordsError(null);
 
     try {
-      const createdRecord = await submitRecord(values);
+
+      if (editingRecord) {
+        await handleSaveEdit();
+        return;
+      }
+
+      const createdRecord = await submitRecord({
+        ...values,
+        owner: activeUser.username,
+      });
       setRecords((currentRecords) => [createdRecord, ...currentRecords]);
       setValues(emptyForm);
       setErrors({});
@@ -97,6 +160,19 @@ function App() {
   };
 
   const handleDelete = async (id: number) => {
+
+
+    const record = records.find((item) => item.id === id);
+
+    if (!record || !canModifyRecord(record)) {
+      pushToast(
+        'Permission denied',
+        'You can only delete your own records.',
+        'error'
+      );
+      return;
+    }
+
     setRecordsError(null);
 
     try {
@@ -116,6 +192,18 @@ function App() {
   };
 
   const handleRestore = async (id: number) => {
+
+    const record = deletedRecords.find((item) => item.id === id);
+
+    if (!record || !canModifyRecord(record)) {
+      pushToast(
+        'Permission denied',
+        'You can only restore your own records.',
+        'error'
+      );
+      return;
+    }
+
     setRecordsError(null);
 
     try {
@@ -135,6 +223,16 @@ function App() {
   };
 
   const handleSeedDatabase = async () => {
+
+    if (!canSeedDatabase) {
+      pushToast(
+        'Permission denied',
+        'Only admins can seed the database.',
+        'error'
+      );
+      return;
+    }
+
     setIsSeeding(true);
     setRecordsError(null);
 
@@ -149,7 +247,73 @@ function App() {
     }
   };
 
+  const handleEdit = (record: SavedRecord) => {
+
+    if (!canModifyRecord(record)) {
+      pushToast(
+        'Permission denied',
+        'You can only edit your own records.',
+        'error'
+      );
+      return;
+    }
+
+    setEditingRecord(record);
+
+    setValues({
+      name: record.name,
+      email: record.email,
+      message: record.message,
+      owner: record.owner ?? '',
+    });
+    setIsFormOpen(true);
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingRecord) return;
+
+    try {
+      const response = await fetch(`http://localhost:8000/records/${editingRecord.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User": activeUser.username,
+          },
+          body: JSON.stringify({
+            ...editingRecord,
+            name: values.name,
+            email: values.email,
+            message: values.message,
+            owner: values.owner,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error();
+      }
+
+      const updatedRecord = await response.json();
+
+      setRecords((prev) =>
+        prev.map((record) =>
+          record.id === updatedRecord.id
+            ? updatedRecord
+            : record
+        )
+      );
+
+      setEditingRecord(null);
+
+      pushToast("Record updated successfully.", "", "success");
+    } catch (error) {
+      pushToast("Update failed", getErrorMessage(error), "error");
+    }
+  };
+
   return (
+
     <div className="app-shell">
       <header className="hero">
         <div>
@@ -158,8 +322,33 @@ function App() {
           <p className="hero-copy">
             Capture new submissions in a focused dialog and review the latest records from the API in the main workspace.
           </p>
+          <div className="user-switcher">
+            <select
+              value={activeUser.username}
+              onChange={(event) => {
+                const selectedUser = USERS.find(
+                  (user) => user.username === event.target.value
+                );
+
+                if (selectedUser) {
+                  setActiveUser(selectedUser);
+                }
+              }}
+            >
+              {USERS.map((user) => (
+                <option
+                  key={user.username}
+                  value={user.username}
+                >
+                  {user.username} ({user.role})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </header>
+
+
 
       <div className="toast-container" aria-live="polite" aria-label="Notifications">
         {toasts.map((toast) => (
@@ -186,14 +375,25 @@ function App() {
             onOpenForm={() => setIsFormOpen(true)}
             onSeed={handleSeedDatabase}
             isSeeding={isSeeding}
-            onEdit={()=>{}}
+            onEdit={handleEdit}
+            activeUser={activeUser}
           />
         </section>
       </main>
 
       {isFormOpen ? (
-        <div className="dialog-backdrop" role="presentation" onClick={() => setIsFormOpen(false)}>
-          <div className="dialog-panel" role="dialog" aria-modal="true" aria-label="Create a submission" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="dialog-backdrop"
+          role="presentation"
+          onClick={() => setIsFormOpen(false)}
+        >
+          <div
+            className="dialog-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Create a submission"
+            onClick={(event) => event.stopPropagation()}
+          >
             <RecordForm
               values={values}
               errors={errors}
@@ -209,6 +409,8 @@ function App() {
     </div>
   );
 }
+
+
 
 export default App;
 // hmr test
