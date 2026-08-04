@@ -16,7 +16,6 @@ type Toast = {
 };
 
 const emptyForm: RecordSubmission = {
-  owner:'',
   name: '',
   email: '',
   message: '',
@@ -33,10 +32,6 @@ function App() {
   const [recordsError, setRecordsError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showDeletedRecords, setShowDeletedRecords] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<SavedRecord | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editMessage, setEditMessage] = useState("")
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
@@ -153,55 +148,6 @@ function App() {
     }
   };
 
-  const handleEdit = (record: SavedRecord) => {
-    setEditingRecord(record);
-
-    setEditName(record.name);
-    setEditEmail(record.email);
-    setEditMessage(record.message);
-  }
-
-  const handleSaveEdit = async () => {
-    if (!editingRecord) return;
-
-    try {
-      const response = await fetch(`http://localhost:8000/records/${editingRecord.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...editingRecord,
-            name: editName,
-            email: editEmail,
-            message: editMessage,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error();
-      }
-
-      const updatedRecord = await response.json();
-
-      setRecords((prev) =>
-        prev.map((record) =>
-          record.id === updatedRecord.id
-            ? updatedRecord
-            : record
-        )
-      );
-
-      setEditingRecord(null);
-
-      setFeedback("Record updated successfully.");
-    } catch (error) {
-      setFeedback(getErrorMessage(error));
-    }
-  };
-
   return (
     <div className="app-shell">
       <header className="hero">
@@ -226,65 +172,6 @@ function App() {
       </div>
 
       <main className="content-grid">
-        <div className="list-toggle" role="group" aria-label="Record list view">
-          <button type="button" className={showDeletedRecords ? 'secondary-button' : 'primary-button'} onClick={() => setShowDeletedRecords(false)}>
-            Active records
-          </button>
-          <button type="button" className={showDeletedRecords ? 'primary-button' : 'secondary-button'} onClick={() => setShowDeletedRecords(true)}>
-            Deleted records
-          </button>
-        </div>
-        <RecordForm
-          values={values}
-          errors={errors}
-          isSubmitting={isSubmitting}
-          onChange={handleChange}
-          onSubmit={handleSubmit}
-        />
-
-        {editingRecord && (
-          <section className="card">
-            <h2>Edit Record</h2>
-            <input
-              value={editName}
-              onChange={(e) =>
-                setEditName(e.target.value)
-              }
-            />
-            <input
-              value={editEmail}
-              onChange={(e) =>
-                setEditEmail(e.target.value)
-              }
-            />
-            <textarea
-              value={editMessage}
-              onChange={(e) =>
-                setEditMessage(e.target.value)
-              }
-            />
-            <button onClick={handleSaveEdit}>
-              Save
-            </button>
-            <button
-              onClick={() => setEditingRecord(null)}
-            >
-              Cancel
-            </button>
-          </section>
-        )}
-        
-        <RecordsList
-          records={records}
-          deletedRecords={deletedRecords}
-          isLoading={isLoadingRecords}
-          error={recordsError}
-          onDelete={handleDelete}
-          onRestore={handleRestore}
-          onToggleView={() => setShowDeletedRecords((current) => !current)}
-          showDeletedRecords={showDeletedRecords}
-          onEdit={handleEdit}
-        />
         <section className="records-shell">
           <RecordsList
             records={records}

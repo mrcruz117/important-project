@@ -26,12 +26,9 @@ app.add_middleware(
 # create model
 class Record(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    owner: str = Field(index=True)
-
     name: str = Field( index=True)
     email: str = Field(index=True)
     message: str
-    
     deleted_at: Optional[datetime] = Field(default=None, nullable=True)
 
 # creating an engine
@@ -119,26 +116,6 @@ def delete_record(record_id: int, session: SessionDep):
     session.refresh(record)
 
     return record
-
-# update a record
-@app.patch("/records/{record_id}")
-def update_record(record_id: int, updated_record: Record, session: SessionDep) -> Record:
-    record = session.get(Record, record_id)
-
-    if not record:
-        raise HTTPException(status_code=404, detail="Record not found")
-
-    record.name = updated_record.name
-    record.email = updated_record.email
-    record.message = updated_record.message
-
-    session.add(record)
-    session.commit()
-    session.refresh(record)
-
-    return record
-    
-
 
 def seed_gen() -> list:
     return [
