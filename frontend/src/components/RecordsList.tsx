@@ -134,6 +134,7 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
       <div className="record-list-actions">
         <span className="record-list-summary">{showDeletedRecords ? `${deletedRecords.length} deleted` : `${records.length} active`}</span>
         <div className="record-list-toolbar">
+          
           {!isReadOnly && (
             <button
               type="button"
