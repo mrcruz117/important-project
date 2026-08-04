@@ -50,6 +50,15 @@ function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [activeUser, setActiveUser] = useState<ActiveUser>(USERS[0]);
 
+
+  const handleOpenForm = () => {
+    setEditingRecord(null);
+    setValues(emptyForm);
+    setErrors({});
+    setIsFormOpen(true);
+  };
+
+
   useEffect(() => {
     const savedUser = localStorage.getItem('activeUser');
     if (savedUser) {
@@ -114,7 +123,6 @@ function App() {
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-
     if (!canCreateRecords) {
       pushToast(
         'Permission denied',
@@ -386,7 +394,7 @@ function App() {
             onRestore={handleRestore}
             onToggleView={() => setShowDeletedRecords((current) => !current)}
             showDeletedRecords={showDeletedRecords}
-            onOpenForm={() => setIsFormOpen(true)}
+            onOpenForm={handleOpenForm}
             onSeed={handleSeedDatabase}
             isSeeding={isSeeding}
             onEdit={handleEdit}
