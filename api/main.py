@@ -5,10 +5,10 @@ from sqlmodel import Field, Session, SQLModel, create_engine, select
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 
-
 # CORS middlware
 
-origins = [ "http://localhost:3000",  # React
+origins = [
+    "http://localhost:3000",  # React
     "http://localhost:5173",  # Vite
 ]
 
@@ -19,33 +19,36 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
 # adding users
-USERS = { 
+USERS = {
     "mcruz": "admin",
     "acheebez": "user",
     "gfrango": "user",
     "bingus": "read-only",
 }
 
+
 # create model
 class Record(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     owner: str = Field(index=True)
 
-    name: str = Field( index=True)
+    name: str = Field(index=True)
     email: str = Field(index=True)
     message: str
-    
+
     deleted_at: Optional[datetime] = Field(default=None, nullable=True)
+
 
 # update record model
 class RecordUpdate(SQLModel):
-    name:str | None = None
-    email:str | None = None
-    message:str | None = None
+    name: str | None = None
+    email: str | None = None
+    message: str | None = None
+
 
 # creating an engine
 DB_DIR = Path(__file__).resolve().parents[1] / "database"
@@ -56,31 +59,30 @@ sqlite_url = f"sqlite:///{sqlite_file_name}"
 connect_args = {"check_same_thread": False}
 engine = create_engine(sqlite_url, connect_args=connect_args)
 
+
 # create the table
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
+
 
 # create session dependency
 def get_session():
     with Session(engine) as session:
         yield session
 
+
 SessionDep = Annotated[Session, Depends(get_session)]
+
 
 # get active user
 def get_current_user(x_user: str = Header(...)):
     role = USERS.get(x_user)
 
     if not role:
-        raise HTTPException(
-            status_code=403,
-            detail="Unknown user"
-        )
+        raise HTTPException(status_code=403, detail="Unknown user")
 
-    return {
-        "username": x_user,
-        "role": role
-    }
+    return {"username": x_user, "role": role}
+
 
 UserDep = Annotated[dict, Depends(get_current_user)]
 
@@ -90,13 +92,13 @@ UserDep = Annotated[dict, Depends(get_current_user)]
 def on_startup():
     create_db_and_tables()
 
+
 # create a record
 @app.post("/records")
 def create_record(record: Record, session: SessionDep, user: UserDep) -> Record:
     if not can_create(user):
         raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to create records"
+            status_code=403, detail="You do not have permission to create records"
         )
 
     existing_record = session.exec(
@@ -105,8 +107,7 @@ def create_record(record: Record, session: SessionDep, user: UserDep) -> Record:
 
     if existing_record:
         raise HTTPException(
-            status_code=400,
-            detail="A record with this email already exists"
+            status_code=400, detail="A record with this email already exists"
         )
 
     record.owner = user["username"]
@@ -115,6 +116,7 @@ def create_record(record: Record, session: SessionDep, user: UserDep) -> Record:
     session.commit()
     session.refresh(record)
     return record
+
 
 # restore record endpoint
 @app.post("/records/{record_id}/restore")
@@ -125,7 +127,9 @@ def restore_record(record_id: int, session: SessionDep, user: UserDep):
         raise HTTPException(status_code=404, detail="Record not found")
 
     if not can_restore(user, record):
-        raise HTTPException(status_code=403,detail="You do not have permission to restore this record")
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to restore this record"
+        )
 
     if record.deleted_at is None:
         raise HTTPException(status_code=400, detail="Record is not deleted")
@@ -138,16 +142,26 @@ def restore_record(record_id: int, session: SessionDep, user: UserDep):
 
     return record
 
+
 # read records
 @app.get("/records")
-def read_records(session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100) -> list[Record]:
-    records = session.exec(select(Record).where(Record.deleted_at.is_(None)).offset(offset).limit(limit)).all()
+def read_records(
+    session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100
+) -> list[Record]:
+    records = session.exec(
+        select(Record).where(Record.deleted_at.is_(None)).offset(offset).limit(limit)
+    ).all()
     return records
+
 
 # view deleted records
 @app.get("/records/deleted")
-def read_deleted_records(session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100) -> list[Record]:
-    records = session.exec(select(Record).where(Record.deleted_at.is_not(None)).offset(offset).limit(limit)).all()
+def read_deleted_records(
+    session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100
+) -> list[Record]:
+    records = session.exec(
+        select(Record).where(Record.deleted_at.is_not(None)).offset(offset).limit(limit)
+    ).all()
     return records
 
 
@@ -160,7 +174,9 @@ def delete_record(record_id: int, session: SessionDep, user: UserDep):
         raise HTTPException(status_code=404, detail="Record not found")
 
     if not can_delete(user, record):
-        raise HTTPException(status_code=403,detail="You do not have permission to delete this record")
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to delete this record"
+        )
 
     if record.deleted_at:
         raise HTTPException(status_code=400, detail="Record already deleted")
@@ -173,35 +189,37 @@ def delete_record(record_id: int, session: SessionDep, user: UserDep):
 
     return record
 
+
 # update a record
 @app.patch("/records/{record_id}")
-def update_record(record_id: int, updated_record: RecordUpdate, session: SessionDep, user: UserDep) -> Record:
+def update_record(
+    record_id: int, updated_record: RecordUpdate, session: SessionDep, user: UserDep
+) -> Record:
     record = session.get(Record, record_id)
 
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
 
     if not can_edit(user, record):
-        raise HTTPException(status_code=403, detail="You do not have permission to edit this record")
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to edit this record"
+        )
 
     if record.deleted_at is not None:
         raise HTTPException(status_code=400, detail="Cannot edit a deleted record")
 
     if updated_record.email:
         existing_record = session.exec(
-            select(Record).where(
-                 Record.email == updated_record.email
-            )
+            select(Record).where(Record.email == updated_record.email)
         ).first()
-        
+
     if existing_record and existing_record.id != record_id:
         raise HTTPException(
-            status_code=400,
-                detail="A record with this email already exists"
-            )
+            status_code=400, detail="A record with this email already exists"
+        )
 
     update_data = updated_record.model_dump(exclude_unset=True)
-    
+
     for key, value in update_data.items():
         setattr(record, key, value)
 
@@ -210,7 +228,6 @@ def update_record(record_id: int, updated_record: RecordUpdate, session: Session
     session.refresh(record)
 
     return record
-
 
 
 def seed_gen() -> list:
@@ -240,7 +257,6 @@ def seed_gen() -> list:
             email="charlie.gray@example.com",
             message="Seed record for development.",
         ),
-
         # --- Additional 20 test records ---
         Record(
             name="David Miller",
@@ -360,7 +376,7 @@ def seed_db(session: SessionDep, user: UserDep):
     try:
         create_record = seed_gen()
 
-        owners = [ "mcruz", "acheebez", "gfrango"]
+        owners = ["mcruz", "acheebez", "gfrango"]
 
         for index, record in enumerate(create_record):
             record.owner = owners[index % len(owners)]
@@ -384,10 +400,7 @@ def seed_db(session: SessionDep, user: UserDep):
 
             except Exception as e:
                 # capture per-record errors without crashing whole seed
-                errors.append({
-                    "email": r.email,
-                    "error": str(e)
-                })
+                errors.append({"email": r.email, "error": str(e)})
 
         session.commit()
 
@@ -396,28 +409,29 @@ def seed_db(session: SessionDep, user: UserDep):
             "inserted": inserted,
             "duplicates_skipped": duplicates,
             "total_attempted": len(create_record),
-            "errors": errors if errors else None
+            "errors": errors if errors else None,
         }
 
     except Exception as e:
         session.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Seed failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Seed failed: {str(e)}")
+
 
 # permissions helpers
 def is_admin(user):
     return user["role"] == "admin"
 
+
 def is_readonly(user):
     return user["role"] == "read-only"
+
 
 def owns_record(user, record):
     if not record:
         return False
-    
+
     return record.owner == user["username"]
+
 
 def can_edit(user, record):
     if is_admin(user):
@@ -428,14 +442,18 @@ def can_edit(user, record):
 
     return False
 
+
 def can_delete(user, record):
     return can_edit(user, record)
+
 
 def can_restore(user, record):
     return can_edit(user, record)
 
+
 def can_create(user):
     return user["role"] in ["admin", "user"]
+
 
 def can_seed(user):
     return is_admin(user)
