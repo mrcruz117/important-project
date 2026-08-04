@@ -11,9 +11,6 @@ type RecordsListProps = {
   onToggleView: () => void;
   showDeletedRecords: boolean;
   onEdit: (record: SavedRecord) => void;
-};
-
-function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRestore, onEdit, onToggleView, showDeletedRecords }: RecordsListProps) {
   onOpenForm: () => void;
   onSeed: () => void;
   isSeeding: boolean;
@@ -99,7 +96,7 @@ function TruncatedText({ children, className }: TruncatedTextProps) {
   );
 }
 
-function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRestore, onToggleView, showDeletedRecords, onOpenForm, onSeed, isSeeding }: RecordsListProps) {
+function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRestore, onToggleView, showDeletedRecords,onEdit, onOpenForm, onSeed, isSeeding }: RecordsListProps) {
   const visibleRecords = showDeletedRecords ? deletedRecords : records;
   const emptyMessage = showDeletedRecords
     ? 'No deleted records right now.'
@@ -146,6 +143,7 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
       ) : visibleRecords.length === 0 ? (
         <p className="status">{emptyMessage}</p>
       ) : (
+        <>
         <ul className="record-list">
           {visibleRecords.map((record) => (
             <li key={record.id} className="record-item">
@@ -174,6 +172,7 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
             </li>
           ))}
         </ul>
+        
         <div className="record-list-scroll">
           <ul className="record-list">
             {visibleRecords.map((record) => (
@@ -203,6 +202,7 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
             ))}
           </ul>
         </div>
+      </>
       )}
     </section>
   );
