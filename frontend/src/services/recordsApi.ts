@@ -1,4 +1,4 @@
-import type { RecordSubmission, SavedRecord } from '../types/record';
+import type { CreateRecordRequest,SavedRecord } from '../types/record';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -64,7 +64,7 @@ export async function fetchRecords(): Promise<SavedRecord[]> {
   return data.records ?? [];
 }
 
-export async function submitRecord(payload: RecordSubmission): Promise<SavedRecord> {
+export async function submitRecord(payload: CreateRecordRequest): Promise<SavedRecord> {
   const response = await fetch(`${API_BASE_URL}/records`, {
     method: 'POST',
     headers: {

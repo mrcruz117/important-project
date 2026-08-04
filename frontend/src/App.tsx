@@ -69,10 +69,17 @@ function App() {
 
   const canSeedDatabase = isAdmin;
 
-  const canModifyRecord = () => {
-    return activeUser.role === 'admin' || activeUser.role === 'user';
-  };
+  const canModifyRecord = (record: SavedRecord) => {
+    if (activeUser.role === 'admin') {
+      return true;
+    }
 
+    if (activeUser.role === 'user') {
+      return record.owner === activeUser.username;
+    }
+
+    return false;
+  };
 
   useEffect(() => {
     void loadRecords();
@@ -140,6 +147,7 @@ function App() {
 
       const createdRecord = await submitRecord({
         ...values,
+        owner: activeUser.username,
       });
       setRecords((currentRecords) => [createdRecord, ...currentRecords]);
       setValues(emptyForm);
@@ -158,7 +166,7 @@ function App() {
 
     const record = records.find((item) => item.id === id);
 
-    if (!record || !canModifyRecord()) {
+    if (!record || !canModifyRecord(record)) {
       pushToast(
         'Permission denied',
         'You can only delete your own records.',
@@ -189,7 +197,7 @@ function App() {
 
     const record = deletedRecords.find((item) => item.id === id);
 
-    if (!record || !canModifyRecord()) {
+    if (!record || !canModifyRecord(record)) {
       pushToast(
         'Permission denied',
         'You can only restore your own records.',
@@ -243,7 +251,7 @@ function App() {
 
   const handleEdit = (record: SavedRecord) => {
 
-    if (!canModifyRecord()) {
+    if (!canModifyRecord(record)) {
       pushToast(
         'Permission denied',
         'You can only edit your own records.',

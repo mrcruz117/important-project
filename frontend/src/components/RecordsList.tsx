@@ -114,9 +114,17 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
 
   const isReadOnly = activeUser.role === 'read-only';
 
-  const canEditRecord = () =>
-    activeUser.role === 'admin' ||
-    activeUser.role === 'user';
+  const canModifyRecord = (record: SavedRecord) => {
+    if (activeUser.role === 'admin') {
+      return true;
+    }
+
+    if (activeUser.role === 'user') {
+      return record.owner === activeUser.username;
+    }
+
+    return false;
+  };
 
 
   return (
@@ -187,7 +195,7 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
                   </div>
 
                   <div className="record-item-actions">
-                    {canEditRecord() && (
+                    {canModifyRecord(record) && (
                       <>
                         <button
                           type="button"
