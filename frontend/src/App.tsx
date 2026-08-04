@@ -273,6 +273,20 @@ function App() {
   const handleSaveEdit = async () => {
     if (!editingRecord) return;
 
+    const noChanges =
+      editingRecord.name === values.name &&
+      editingRecord.email === values.email &&
+      editingRecord.message === values.message;
+
+    if (noChanges) {
+      pushToast(
+        'No changes detected',
+        'Update at least one field before saving.',
+        'error'
+      );
+      return;
+    }
+
     try {
       const response = await fetch(`http://localhost:8000/records/${editingRecord.id}`,
         {
