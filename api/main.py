@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Annotated, Optional
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Header
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -22,6 +22,13 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+# adding users
+USERS = { 
+    "mcruz": "admin",
+    "acheebez": "user",
+    "gfrango": "user",
+    "bingus": "read-only",
+}
 
 # create model
 class Record(SQLModel, table=True):
@@ -60,6 +67,20 @@ def get_session():
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
+# get active user
+def get_current_user(x_user: str = Header):
+    role = USERS.get(x_user)
+
+    if not role:
+        raise HTTPException(status_code=403, detail="Unkown user")
+
+    return {
+        "username": x_user,
+        "role": role
+    }
+
+UserDep = Annotated[dict, Depends(get_current_user)]
+
 
 # create db table on startup
 @app.on_event("startup")
@@ -68,8 +89,11 @@ def on_startup():
 
 # create a record
 @app.post("/records")
-def create_record(record: Record, session: SessionDep) -> Record:
-
+def create_record(record: Record, session: SessionDep, user: UserDep) -> Record:
+    if not can_create(user):
+        raise HTTPException(status_code=403, detail="You do not have permission to create records")
+    record.owner = user["username"]
+    
     session.add(record)
     session.commit()
     session.refresh(record)
@@ -77,8 +101,11 @@ def create_record(record: Record, session: SessionDep) -> Record:
 
 # restore record endpoint
 @app.post("/records/{record_id}/restore")
-def restore_record(record_id: int, session: SessionDep):
+def restore_record(record_id: int, session: SessionDep, user: UserDep):
     record = session.get(Record, record_id)
+
+    if not can_restore(user, record):
+        raise HTTPException(status_code=403,detail="You do not have permission to restore this record")
 
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
@@ -109,8 +136,11 @@ def read_deleted_records(session: SessionDep, offset: int = 0, limit: Annotated[
 
 # delete records (soft delete)
 @app.delete("/records/{record_id}")
-def delete_record(record_id: int, session: SessionDep):
+def delete_record(record_id: int, session: SessionDep, user: UserDep):
     record = session.get(Record, record_id)
+
+    if not can_delete(user, record):
+        raise HTTPException(status_code=403,detail="You do not have permission to delete this record")
 
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
@@ -128,8 +158,11 @@ def delete_record(record_id: int, session: SessionDep):
 
 # update a record
 @app.patch("/records/{record_id}")
-def update_record(record_id: int, updated_record: RecordUpdate, session: SessionDep) -> Record:
+def update_record(record_id: int, updated_record: RecordUpdate, session: SessionDep, user: UserDep) -> Record:
     record = session.get(Record, record_id)
+
+    if not can_edit(user, record):
+        raise HTTPException(status_code=403, detail="You do not have permission to edit this record")
 
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
@@ -315,7 +348,11 @@ def seed_gen() -> list:
 
 #
 @app.post("/seed")
-def seed_db(session: SessionDep):
+def seed_db(session: SessionDep, user: UserDep):
+
+    if not can_seed(user):
+        raise HTTPException(status_code=403, detail="Only admins may seed the database")
+
     try:
         create_record = seed_gen()
 
@@ -359,3 +396,34 @@ def seed_db(session: SessionDep):
             status_code=500,
             detail=f"Seed failed: {str(e)}"
         )
+
+# permissions helpers
+def is_admin(user):
+    return user["role"] == "admin"
+
+def is_readonly(user):
+    return user["role"] == "read-only"
+
+def owns_record(user, record):
+    return record.owner == user["username"]
+
+def can_edit(user, record):
+    if is_admin(user):
+        return True
+
+    if user["role"] == "user":
+        return owns_record(user, record)
+
+    return False
+a
+def can_delete(user, record):
+    return can_edit(user, record)
+
+def can_restore(user, record):
+    return can_edit(user, record)
+
+def can_create(user):
+    return user["Role"] in ["admin", "user"]
+
+def can_seed(user):
+    return is_admin(user)
