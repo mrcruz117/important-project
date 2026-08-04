@@ -144,34 +144,6 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
         <p className="status">{emptyMessage}</p>
       ) : (
         <>
-        <ul className="record-list">
-          {visibleRecords.map((record) => (
-            <li key={record.id} className="record-item">
-              <div className="record-item-main">
-                <strong>{record.name}</strong>
-                <p>{record.email}</p>
-                <p>{record.message}</p>
-              </div>
-
-              <div className="record-item-actions">
-                {showDeletedRecords ? (
-                  <button type="button" className="restore-button" onClick={() => onRestore(record.id)}>
-                    Restore
-                  </button>
-                ) : (
-                  <>
-                  <button type= "button" className="edit_button" onClick={() => onEdit(record)}>
-                    Edit
-                  </button>
-                  <button type="button" className="delete-button" onClick={() => onDelete(record.id)}>
-                    Delete
-                  </button>
-                  </>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
         
         <div className="record-list-scroll">
           <ul className="record-list">
