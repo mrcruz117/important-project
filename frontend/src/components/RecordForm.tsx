@@ -7,15 +7,26 @@ type RecordFormProps = {
   isSubmitting: boolean;
   onChange: (field: keyof RecordSubmission, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  className?: string;
+  onClose?: () => void;
 };
 
-function RecordForm({ values, errors, isSubmitting, onChange, onSubmit }: RecordFormProps) {
+function RecordForm({ values, errors, isSubmitting, onChange, onSubmit, className, onClose }: RecordFormProps) {
+  const formClassName = className ? `card form-card ${className}` : 'card form-card';
+
   return (
-    <form className="card form-card" onSubmit={onSubmit} noValidate>
-      <div className="card-header">
-        <p className="eyebrow">Submission form</p>
-        <h2>Share a critical update</h2>
-        <p className="muted">Submit a record and it will be saved through the API.</p>
+    <form className={formClassName} onSubmit={onSubmit} noValidate>
+      <div className="card-header dialog-header">
+        <div>
+          <p className="eyebrow">Submission form</p>
+          <h2>Share a critical update</h2>
+          <p className="muted">Submit a record and it will be saved through the API.</p>
+        </div>
+        {onClose ? (
+          <button type="button" className="icon-button" onClick={onClose} aria-label="Close dialog">
+            ×
+          </button>
+        ) : null}
       </div>
 
       <label className="field">
@@ -62,9 +73,16 @@ function RecordForm({ values, errors, isSubmitting, onChange, onSubmit }: Record
         {errors.message ? <small id="message-error">{errors.message}</small> : null}
       </label>
 
-      <button className="primary-button" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Saving...' : 'Submit record'}
-      </button>
+      <div className="form-actions">
+        {onClose ? (
+          <button type="button" className="secondary-button" onClick={onClose}>
+            Cancel
+          </button>
+        ) : null}
+        <button className="primary-button" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : 'Submit record'}
+        </button>
+      </div>
     </form>
   );
 }
