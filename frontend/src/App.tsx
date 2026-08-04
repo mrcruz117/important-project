@@ -19,6 +19,7 @@ const emptyForm: RecordSubmission = {
   name: '',
   email: '',
   message: '',
+  owner:  '',
 };
 
 function App() {
@@ -185,6 +186,7 @@ function App() {
             onOpenForm={() => setIsFormOpen(true)}
             onSeed={handleSeedDatabase}
             isSeeding={isSeeding}
+            onEdit={()=>{}}
           />
         </section>
       </main>
