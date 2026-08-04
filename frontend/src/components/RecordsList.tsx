@@ -96,7 +96,7 @@ function TruncatedText({ children, className }: TruncatedTextProps) {
   );
 }
 
-function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRestore, onToggleView, showDeletedRecords,onEdit, onOpenForm, onSeed, isSeeding }: RecordsListProps) {
+function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRestore, onToggleView, showDeletedRecords, onEdit, onOpenForm, onSeed, isSeeding }: RecordsListProps) {
   const visibleRecords = showDeletedRecords ? deletedRecords : records;
   const emptyMessage = showDeletedRecords
     ? 'No deleted records right now.'
@@ -144,37 +144,44 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
         <p className="status">{emptyMessage}</p>
       ) : (
         <>
-        
-        <div className="record-list-scroll">
-          <ul className="record-list">
-            {visibleRecords.map((record) => (
-              <li key={record.id} className="record-item">
-                <div className="record-cell record-cell-name">
-                  <TruncatedText className="record-item-text record-item-title">{record.name}</TruncatedText>
-                </div>
-                <div className="record-cell record-cell-email">
-                  <TruncatedText className="record-item-text">{record.email}</TruncatedText>
-                </div>
-                <div className="record-cell record-cell-message">
-                  <TruncatedText className="record-item-text">{record.message}</TruncatedText>
-                </div>
 
-                <div className="record-item-actions">
-                  {showDeletedRecords ? (
-                    <button type="button" className="restore-button" onClick={() => onRestore(record.id)}>
-                      Restore
-                    </button>
-                  ) : (
-                    <button type="button" className="delete-button" onClick={() => onDelete(record.id)}>
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </>
+          <div className="record-list-scroll">
+            <ul className="record-list">
+              {visibleRecords.map((record) => (
+                <li key={record.id} className="record-item">
+                  <div className="record-cell record-cell-name">
+                    <TruncatedText className="record-item-text record-item-title">{record.name}</TruncatedText>
+                  </div>
+                  <div className="record-cell record-cell-email">
+                    <TruncatedText className="record-item-text">{record.email}</TruncatedText>
+                  </div>
+                  <div className="record-cell record-cell-message">
+                    <TruncatedText className="record-item-text">{record.message}</TruncatedText>
+                  </div>
+
+                  <div className="record-item-actions">
+                      <button
+                        type="button"
+                        className="edit-button"
+                        onClick={() => onEdit(record)}
+                      >
+                        Edit
+                      </button>
+                      {showDeletedRecords ? (
+                        <button type="button" className="restore-button" onClick={() => onRestore(record.id)}>
+                          Restore
+                        </button>
+                      ) : (
+                        <button type="button" className="delete-button" onClick={() => onDelete(record.id)}>
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
       )}
     </section>
   );
