@@ -9,7 +9,7 @@ type RecordFormProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   className?: string;
   onClose?: () => void;
-  
+
 };
 
 function RecordForm({ values, errors, isSubmitting, onChange, onSubmit, className, onClose }: RecordFormProps) {
