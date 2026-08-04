@@ -42,13 +42,7 @@ function RecordForm({ values, errors, isSubmitting, onChange, onSubmit, classNam
         {errors.name ? <small id="name-error">{errors.name}</small> : null}
       </label>
       
-      <label className='field'>
-        Owner
-        <input
-          value={values.owner}
-          onChange={(event) => onChange("owner", event.target.value)}
-        />
-      </label>
+      
 
       <label className="field">
         <span>Email</span>
