@@ -9,9 +9,10 @@ type RecordsListProps = {
   onRestore: (id: number) => void;
   onToggleView: () => void;
   showDeletedRecords: boolean;
+  onEdit: (record: SavedRecord) => void;
 };
 
-function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRestore, onToggleView, showDeletedRecords }: RecordsListProps) {
+function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRestore, onEdit, onToggleView, showDeletedRecords }: RecordsListProps) {
   const visibleRecords = showDeletedRecords ? deletedRecords : records;
   const emptyMessage = showDeletedRecords
     ? 'No deleted records right now.'
@@ -65,9 +66,14 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
                     Restore
                   </button>
                 ) : (
+                  <>
+                  <button type= "button" className="edit_button" onClick={() => onEdit(record)}>
+                    Edit
+                  </button>
                   <button type="button" className="delete-button" onClick={() => onDelete(record.id)}>
                     Delete
                   </button>
+                  </>
                 )}
               </div>
             </li>

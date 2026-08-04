@@ -7,6 +7,7 @@ import { validateRecord } from './utils/validateRecord';
 import './App.css';
 
 const emptyForm: RecordSubmission = {
+  owner:'',
   name: '',
   email: '',
   message: '',
@@ -23,6 +24,10 @@ function App() {
   const [recordsError, setRecordsError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [showDeletedRecords, setShowDeletedRecords] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<SavedRecord | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editMessage, setEditMessage] = useState("")
 
   useEffect(() => {
     void loadRecords();
@@ -136,6 +141,55 @@ function App() {
     }
   };
 
+  const handleEdit = (record: SavedRecord) => {
+    setEditingRecord(record);
+
+    setEditName(record.name);
+    setEditEmail(record.email);
+    setEditMessage(record.message);
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingRecord) return;
+
+    try {
+      const response = await fetch(`http://localhost:8000/records/${editingRecord.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...editingRecord,
+            name: editName,
+            email: editEmail,
+            message: editMessage,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error();
+      }
+
+      const updatedRecord = await response.json();
+
+      setRecords((prev) =>
+        prev.map((record) =>
+          record.id === updatedRecord.id
+            ? updatedRecord
+            : record
+        )
+      );
+
+      setEditingRecord(null);
+
+      setFeedback("Record updated successfully.");
+    } catch (error) {
+      setFeedback(getErrorMessage(error));
+    }
+  };
+
   return (
     <div className="app-shell">
       <header className="hero">
@@ -176,6 +230,38 @@ function App() {
           onSubmit={handleSubmit}
         />
 
+        {editingRecord && (
+          <section className="card">
+            <h2>Edit Record</h2>
+            <input
+              value={editName}
+              onChange={(e) =>
+                setEditName(e.target.value)
+              }
+            />
+            <input
+              value={editEmail}
+              onChange={(e) =>
+                setEditEmail(e.target.value)
+              }
+            />
+            <textarea
+              value={editMessage}
+              onChange={(e) =>
+                setEditMessage(e.target.value)
+              }
+            />
+            <button onClick={handleSaveEdit}>
+              Save
+            </button>
+            <button
+              onClick={() => setEditingRecord(null)}
+            >
+              Cancel
+            </button>
+          </section>
+        )}
+        
         <RecordsList
           records={records}
           deletedRecords={deletedRecords}
@@ -185,6 +271,7 @@ function App() {
           onRestore={handleRestore}
           onToggleView={() => setShowDeletedRecords((current) => !current)}
           showDeletedRecords={showDeletedRecords}
+          onEdit={handleEdit}
         />
       </main>
     </div>

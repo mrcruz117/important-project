@@ -30,6 +30,15 @@ function RecordForm({ values, errors, isSubmitting, onChange, onSubmit }: Record
         {errors.name ? <small id="name-error">{errors.name}</small> : null}
       </label>
 
+      <label>
+        Owner
+        <input
+          value={values.owner}
+          onChange={("owner", e.target.value)
+          }
+        />
+      </label>
+
       <label className="field">
         <span>Email</span>
         <input
