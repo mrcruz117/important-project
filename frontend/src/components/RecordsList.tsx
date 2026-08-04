@@ -14,6 +14,10 @@ type RecordsListProps = {
   onOpenForm: () => void;
   onSeed: () => void;
   isSeeding: boolean;
+  activeUser: {
+    username: string;
+    role: 'admin' | 'user' | 'read-only';
+  };
 };
 
 type TruncatedTextProps = {
@@ -96,7 +100,7 @@ function TruncatedText({ children, className }: TruncatedTextProps) {
   );
 }
 
-function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRestore, onToggleView, showDeletedRecords, onEdit, onOpenForm, onSeed, isSeeding }: RecordsListProps) {
+function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRestore, onToggleView, showDeletedRecords, onEdit, onOpenForm, onSeed, isSeeding, activeUser }: RecordsListProps) {
   const visibleRecords = showDeletedRecords ? deletedRecords : records;
   const emptyMessage = showDeletedRecords
     ? 'No deleted records right now.'
@@ -105,6 +109,19 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
   const listDescription = showDeletedRecords
     ? 'These records are still stored but hidden from the active list until restored.'
     : 'These are the records currently stored by the backend.';
+
+  const isAdmin = activeUser.role === 'admin';
+
+  const isReadOnly = activeUser.role === 'read-only';
+
+  const canEditRecord = (record: SavedRecord) => {
+    if (isAdmin) {
+      return true;
+    }
+
+    return record.owner === activeUser.username;
+  };
+
 
   return (
     <section className="card list-card" aria-live="polite">
@@ -117,12 +134,25 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
       <div className="record-list-actions">
         <span className="record-list-summary">{showDeletedRecords ? `${deletedRecords.length} deleted` : `${records.length} active`}</span>
         <div className="record-list-toolbar">
-          <button type="button" className="primary-button" onClick={onOpenForm}>
-            New submission
-          </button>
-          <button type="button" className="secondary-button" onClick={onSeed} disabled={isSeeding}>
-            {isSeeding ? 'Seeding…' : 'Seed sample records'}
-          </button>
+          {!isReadOnly && (
+            <button
+              type="button"
+              className="primary-button"
+              onClick={onOpenForm}
+            >
+              New submission
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={onSeed}
+              disabled={isSeeding}
+            >
+              {isSeeding ? 'Seeding…' : 'Seed sample records'}
+            </button>
+          )}
           <button type="button" className="secondary-button" onClick={onToggleView} aria-pressed={showDeletedRecords}>
             {showDeletedRecords ? 'Show active records' : 'Show deleted records'}
           </button>
@@ -160,23 +190,36 @@ function RecordsList({ records, deletedRecords, isLoading, error, onDelete, onRe
                   </div>
 
                   <div className="record-item-actions">
-                      <button
-                        type="button"
-                        className="edit-button"
-                        onClick={() => onEdit(record)}
-                      >
-                        Edit
-                      </button>
-                      {showDeletedRecords ? (
-                        <button type="button" className="restore-button" onClick={() => onRestore(record.id)}>
-                          Restore
+                    {canEditRecord(record) && (
+                      <>
+                        <button
+                          type="button"
+                          className="edit-button"
+                          onClick={() => onEdit(record)}
+                        >
+                          Edit
                         </button>
-                      ) : (
-                        <button type="button" className="delete-button" onClick={() => onDelete(record.id)}>
-                          Delete
-                        </button>
-                      )}
-                    </div>
+
+                        {showDeletedRecords ? (
+                          <button
+                            type="button"
+                            className="restore-button"
+                            onClick={() => onRestore(record.id)}
+                          >
+                            Restore
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="delete-button"
+                            onClick={() => onDelete(record.id)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
