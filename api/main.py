@@ -94,9 +94,23 @@ def on_startup():
 @app.post("/records")
 def create_record(record: Record, session: SessionDep, user: UserDep) -> Record:
     if not can_create(user):
-        raise HTTPException(status_code=403, detail="You do not have permission to create records")
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to create records"
+        )
+
+    existing_record = session.exec(
+        select(Record).where(Record.email == record.email)
+    ).first()
+
+    if existing_record:
+        raise HTTPException(
+            status_code=400,
+            detail="A record with this email already exists"
+        )
+
     record.owner = user["username"]
-    
+
     session.add(record)
     session.commit()
     session.refresh(record)
@@ -172,6 +186,19 @@ def update_record(record_id: int, updated_record: RecordUpdate, session: Session
 
     if record.deleted_at is not None:
         raise HTTPException(status_code=400, detail="Cannot edit a deleted record")
+
+    if updated_record.email:
+        existing_record = session.exec(
+            select(Record).where(
+                 Record.email == updated_record.email
+            )
+        ).first()
+        
+    if existing_record and existing_record.id != record_id:
+        raise HTTPException(
+            status_code=400,
+                detail="A record with this email already exists"
+            )
 
     update_data = updated_record.model_dump(exclude_unset=True)
     
