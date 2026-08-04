@@ -278,6 +278,7 @@ function App() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            "X-User": activeUser.username,
           },
           body: JSON.stringify({
             ...editingRecord,
@@ -312,6 +313,7 @@ function App() {
   };
 
   return (
+
     <div className="app-shell">
       <header className="hero">
         <div>
@@ -320,27 +322,29 @@ function App() {
           <p className="hero-copy">
             Capture new submissions in a focused dialog and review the latest records from the API in the main workspace.
           </p>
-          <select
-            value={activeUser.username}
-            onChange={(event) => {
-              const selectedUser = USERS.find(
-                (user) => user.username === event.target.value
-              );
+          <div className="user-switcher">
+            <select
+              value={activeUser.username}
+              onChange={(event) => {
+                const selectedUser = USERS.find(
+                  (user) => user.username === event.target.value
+                );
 
-              if (selectedUser) {
-                setActiveUser(selectedUser);
-              }
-            }}
-          >
-            {USERS.map((user) => (
-              <option
-                key={user.username}
-                value={user.username}
-              >
-                {user.username} ({user.role})
-              </option>
-            ))}
-          </select>
+                if (selectedUser) {
+                  setActiveUser(selectedUser);
+                }
+              }}
+            >
+              {USERS.map((user) => (
+                <option
+                  key={user.username}
+                  value={user.username}
+                >
+                  {user.username} ({user.role})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </header>
 

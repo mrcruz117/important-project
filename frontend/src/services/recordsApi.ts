@@ -2,6 +2,17 @@ import type { RecordSubmission, SavedRecord } from '../types/record';
 
 const API_BASE_URL = 'http://localhost:8000';
 
+function getCurrentUser(): string {
+  const savedUser = localStorage.getItem('activeUser');
+
+  if (!savedUser) {
+    return 'mcruz';
+  }
+
+  return JSON.parse(savedUser).username;
+}
+
+
 export interface RestoreResponse {
   message: string;
 }
@@ -40,11 +51,11 @@ export async function fetchRecords(): Promise<SavedRecord[]> {
   const response = await fetch(`${API_BASE_URL}/records`);
 
   if (!response.ok) {
-    const errorBody = await parseJson<{detail?: string}>(response);
+    const errorBody = await parseJson<{ detail?: string }>(response);
     throw new Error(errorBody.detail ?? 'Unable to load saved records.');
   }
 
-  const data = await parseJson<SavedRecord[] | {records?: SavedRecord[]}>(response);
+  const data = await parseJson<SavedRecord[] | { records?: SavedRecord[] }>(response);
 
   if (Array.isArray(data)) {
     return data;
@@ -58,12 +69,13 @@ export async function submitRecord(payload: RecordSubmission): Promise<SavedReco
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-User': getCurrentUser(),
     },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    const errorBody = await parseJson<{detail?: string}>(response);
+    const errorBody = await parseJson<{ detail?: string }>(response);
     throw new Error(errorBody.detail ?? 'Unable to save the submission.');
   }
 
@@ -73,10 +85,13 @@ export async function submitRecord(payload: RecordSubmission): Promise<SavedReco
 export async function deleteRecord(recordId: number): Promise<SavedRecord> {
   const response = await fetch(`${API_BASE_URL}/records/${recordId}`, {
     method: 'DELETE',
+    headers: {
+      'X-User': getCurrentUser(),
+    },
   });
 
   if (!response.ok) {
-    const errorBody = await parseJson<{detail?: string}>(response);
+    const errorBody = await parseJson<{ detail?: string }>(response);
     throw new Error(errorBody.detail ?? 'Unable to delete the record.');
   }
 
@@ -87,11 +102,11 @@ export async function fetchDeletedRecords(): Promise<SavedRecord[]> {
   const response = await fetch(`${API_BASE_URL}/records/deleted`);
 
   if (!response.ok) {
-    const errorBody = await parseJson<{detail?: string}>(response);
+    const errorBody = await parseJson<{ detail?: string }>(response);
     throw new Error(errorBody.detail ?? 'Unable to load deleted records.');
   }
 
-  const data = await parseJson<SavedRecord[] | {records?: SavedRecord[]}>(response);
+  const data = await parseJson<SavedRecord[] | { records?: SavedRecord[] }>(response);
 
   if (Array.isArray(data)) {
     return data;
@@ -103,10 +118,13 @@ export async function fetchDeletedRecords(): Promise<SavedRecord[]> {
 export async function restoreRecord(recordId: number): Promise<SavedRecord> {
   const response = await fetch(`${API_BASE_URL}/records/${recordId}/restore`, {
     method: 'POST',
+    headers: {
+      'X-User': getCurrentUser(),
+    },
   });
 
   if (!response.ok) {
-    const errorBody = await parseJson<{detail?: string}>(response);
+    const errorBody = await parseJson<{ detail?: string }>(response);
     throw new Error(errorBody.detail ?? 'Unable to restore the record.');
   }
 
@@ -118,11 +136,12 @@ export async function seedDatabase(): Promise<SeedResponse> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-User': getCurrentUser(),
     },
   });
 
   if (!response.ok) {
-    const errorBody = await parseJson<{detail?: string}>(response);
+    const errorBody = await parseJson<{ detail?: string }>(response);
     throw new Error(errorBody.detail ?? 'Unable to seed the database.');
   }
 

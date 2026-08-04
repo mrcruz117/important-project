@@ -405,6 +405,9 @@ def is_readonly(user):
     return user["role"] == "read-only"
 
 def owns_record(user, record):
+    if not record:
+        return False
+    
     return record.owner == user["username"]
 
 def can_edit(user, record):
@@ -415,7 +418,7 @@ def can_edit(user, record):
         return owns_record(user, record)
 
     return False
-a
+
 def can_delete(user, record):
     return can_edit(user, record)
 
@@ -423,7 +426,7 @@ def can_restore(user, record):
     return can_edit(user, record)
 
 def can_create(user):
-    return user["Role"] in ["admin", "user"]
+    return user["role"] in ["admin", "user"]
 
 def can_seed(user):
     return is_admin(user)
