@@ -34,8 +34,7 @@ function RecordForm({ values, errors, isSubmitting, onChange, onSubmit }: Record
         Owner
         <input
           value={values.owner}
-          onChange={("owner", e.target.value)
-          }
+          onChange={(event) => onChange("owner", event.target.value)}
         />
       </label>
 
