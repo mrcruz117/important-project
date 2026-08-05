@@ -13,6 +13,10 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
+
+# auth scheme
+oauth2_scheme = OAuth2PassordBearer(tokenUrl="login")
+
 # CORS middleware
 
 origins = [
