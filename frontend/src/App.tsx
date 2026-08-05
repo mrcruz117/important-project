@@ -4,6 +4,8 @@ import RecordsList from './components/RecordsList';
 import { deleteRecord, fetchDeletedRecords, fetchRecords, getErrorMessage, restoreRecord, seedDatabase, submitRecord } from './services/recordsApi';
 import type { RecordSubmission, SavedRecord } from './types/record';
 import { validateRecord } from './utils/validateRecord';
+import Login from "./pages/Login";
+import { useAuth } from "./context/AuthContext";
 import './App.css';
 
 type ToastVariant = 'success' | 'error';
@@ -15,19 +17,6 @@ type Toast = {
   variant: ToastVariant;
 };
 
-type UserRole = 'admin' | 'user' | 'read-only';
-
-type ActiveUser = {
-  username: string;
-  role: UserRole;
-}
-
-const USERS: ActiveUser[] = [
-  { username: "mcruz", role: "admin" },
-  { username: "acheebez", role: "user" },
-  { username: "gfrango", role: "user" },
-  { username: 'bingus', role: 'read-only' },
-];
 
 const emptyForm: RecordSubmission = {
   name: '',
@@ -48,8 +37,11 @@ function App() {
   const [showDeletedRecords, setShowDeletedRecords] = useState(false);
   const [editingRecord, setEditingRecord] = useState<SavedRecord | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [activeUser, setActiveUser] = useState<ActiveUser>(USERS[0]);
+  const { isAuthenticated, user, logout } = useAuth();
 
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   const handleOpenForm = () => {
     setEditingRecord(null);
@@ -59,32 +51,22 @@ function App() {
   };
 
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem('activeUser');
-    if (savedUser) {
-      setActiveUser(JSON.parse(savedUser));
-    }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('activeUser', JSON.stringify(activeUser));
-  }, [activeUser]);
+  const isAdmin = user?.role === 'admin';
 
-  const isAdmin = activeUser.role === 'admin';
-
-  const isReadOnly = activeUser.role === 'read-only';
+  const isReadOnly = user?.role === 'read-only';
 
   const canCreateRecords = !isReadOnly;
 
   const canSeedDatabase = isAdmin;
 
   const canModifyRecord = (record: SavedRecord) => {
-    if (activeUser.role === 'admin') {
+    if (user?.role === 'admin') {
       return true;
     }
 
-    if (activeUser.role === 'user') {
-      return record.owner === activeUser.username;
+    if (user?.role === 'user') {
+      return record.owner === user.username;
     }
 
     return false;
@@ -155,7 +137,7 @@ function App() {
 
       const createdRecord = await submitRecord({
         ...values,
-        owner: activeUser.username,
+        owner: user?.username ?? "",
       });
       setRecords((currentRecords) => [createdRecord, ...currentRecords]);
       setValues(emptyForm);
@@ -301,7 +283,7 @@ function App() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            "X-User": activeUser.username,
+            "X-User": user?.username ?? "",
           },
           body: JSON.stringify({
             ...editingRecord,
@@ -344,31 +326,19 @@ function App() {
           <p className="hero-copy">
             Capture new submissions in a focused dialog and review the latest records from the API in the main workspace.
           </p>
-          <div className="user-switcher">
-            <select
-              value={activeUser.username}
-              onChange={(event) => {
-                const selectedUser = USERS.find(
-                  (user) => user.username === event.target.value
-                );
 
-                if (selectedUser) {
-                  setActiveUser(selectedUser);
-                }
-              }}
-            >
-              {USERS.map((user) => (
-                <option
-                  key={user.username}
-                  value={user.username}
-                >
-                  {user.username} ({user.role})
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
       </header>
+
+      <div className="user-info">
+        <span>
+          {user?.username} ({user?.role})
+        </span>
+
+        <button onClick={logout}>
+          Logout
+        </button>
+      </div>
 
 
 
@@ -398,7 +368,10 @@ function App() {
             onSeed={handleSeedDatabase}
             isSeeding={isSeeding}
             onEdit={handleEdit}
-            activeUser={activeUser}
+            activeUser={{
+              username: user?.username ?? "",
+              role: user?.role ?? "read-only",
+            }}
           />
         </section>
       </main>
