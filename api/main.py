@@ -3,9 +3,17 @@ from typing import Annotated, Optional
 from fastapi import Depends, FastAPI, HTTPException, Query, Header
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+from pydantic import BaseModel
+from fastapi.security import OAuth2PassordBearer
 
-# CORS middlware
+SECRET_KEY = "blah-bla-bl-b"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+
+# CORS middleware
 
 origins = [
     "http://localhost:3000",  # React
@@ -30,6 +38,8 @@ USERS = {
     "bingus": "read-only",
 }
 
+class LoginRequest(BaseModel):
+    username: str
 
 # create model
 class Record(SQLModel, table=True):
@@ -41,7 +51,6 @@ class Record(SQLModel, table=True):
     message: str
 
     deleted_at: Optional[datetime] = Field(default=None, nullable=True)
-
 
 # update record model
 class RecordUpdate(SQLModel):
@@ -73,24 +82,53 @@ def get_session():
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
-
 # get active user
-def get_current_user(x_user: str = Header(...)):
-    role = USERS.get(x_user)
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
-    if not role:
-        raise HTTPException(status_code=403, detail="Unknown user")
+        username = payload.get("sub")
+        role = payload.get("role")
 
-    return {"username": x_user, "role": role}
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        return {
+            "username": username,
+            "role": role
+        }
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 UserDep = Annotated[dict, Depends(get_current_user)]
+
+def create_access_token(data: dict):
+    payload = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    payload.update({"exp": expire})
+
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
 # create db table on startup
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
+
+# login route
+@app.post("/login")
+def login(data: LoginRequest):
+    role = USERS.get(data.username)
+
+    if not role:
+        raise HTTPException(status_code=401, detail="Invalid User")
+
+    access_token = create_access_token({"sub": data.username, "role": role})
+
+    return {"access token": access_token, "token_type": "bearer"}
 
 
 # create a record
